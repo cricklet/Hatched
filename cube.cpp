@@ -2,52 +2,53 @@
 #include "helper.h"
 
 static GLfloat vertices[] = {
-  -0.5f, -0.5f, -0.5f,
-  0.5f, -0.5f, -0.5f,
-  0.5f,  0.5f, -0.5f,
-  0.5f,  0.5f, -0.5f,
-  -0.5f,  0.5f, -0.5f,
-  -0.5f, -0.5f, -0.5f,
+  -0.5f, -0.5f, -0.5f, 1, 0.5, 1, // xyz rgb
+  0.5f, -0.5f, -0.5f, 1, 0.5, 1,
+  0.5f,  0.5f, -0.5f, 1, 0.5, 1,
+  0.5f,  0.5f, -0.5f, 1, 0.5, 1,
+  -0.5f,  0.5f, -0.5f, 1, 0.5, 1,
+  -0.5f, -0.5f, -0.5f, 1, 0.5, 1,
 
-  -0.5f, -0.5f,  0.5f,
-  0.5f, -0.5f,  0.5f,
-  0.5f,  0.5f,  0.5f,
-  0.5f,  0.5f,  0.5f,
-  -0.5f,  0.5f,  0.5f,
-  -0.5f, -0.5f,  0.5f,
+  -0.5f, -0.5f,  0.5f, 1, 0.5, 1,
+  0.5f, -0.5f,  0.5f, 1, 0.5, 1,
+  0.5f,  0.5f,  0.5f, 1, 0.5, 1,
+  0.5f,  0.5f,  0.5f, 1, 0.5, 1,
+  -0.5f,  0.5f,  0.5f, 1, 0.5, 1,
+  -0.5f, -0.5f,  0.5f, 1, 0.5, 1,
 
-  -0.5f,  0.5f,  0.5f,
-  -0.5f,  0.5f, -0.5f,
-  -0.5f, -0.5f, -0.5f,
-  -0.5f, -0.5f, -0.5f,
-  -0.5f, -0.5f,  0.5f,
-  -0.5f,  0.5f,  0.5f,
+  -0.5f,  0.5f,  0.5f, 1, 0.5, 1,
+  -0.5f,  0.5f, -0.5f, 1, 0.5, 1,
+  -0.5f, -0.5f, -0.5f, 1, 0.5, 1,
+  -0.5f, -0.5f, -0.5f, 1, 0.5, 1,
+  -0.5f, -0.5f,  0.5f, 1, 0.5, 1,
+  -0.5f,  0.5f,  0.5f, 1, 0.5, 1,
 
-  0.5f,  0.5f,  0.5f,
-  0.5f,  0.5f, -0.5f,
-  0.5f, -0.5f, -0.5f,
-  0.5f, -0.5f, -0.5f,
-  0.5f, -0.5f,  0.5f,
-  0.5f,  0.5f,  0.5f,
+  0.5f,  0.5f,  0.5f, 1, 0.5, 1,
+  0.5f,  0.5f, -0.5f, 1, 0.5, 1,
+  0.5f, -0.5f, -0.5f, 1, 0.5, 1,
+  0.5f, -0.5f, -0.5f, 1, 0.5, 1,
+  0.5f, -0.5f,  0.5f, 1, 0.5, 1,
+  0.5f,  0.5f,  0.5f, 1, 0.5, 1,
 
-  -0.5f, -0.5f, -0.5f,
-  0.5f, -0.5f, -0.5f,
-  0.5f, -0.5f,  0.5f,
-  0.5f, -0.5f,  0.5f,
-  -0.5f, -0.5f,  0.5f,
-  -0.5f, -0.5f, -0.5f,
+  -0.5f, -0.5f, -0.5f, 1, 0.5, 1,
+  0.5f, -0.5f, -0.5f, 1, 0.5, 1,
+  0.5f, -0.5f,  0.5f, 1, 0.5, 1,
+  0.5f, -0.5f,  0.5f, 1, 0.5, 1,
+  -0.5f, -0.5f,  0.5f, 1, 0.5, 1,
+  -0.5f, -0.5f, -0.5f, 1, 0.5, 1,
 
-  -0.5f,  0.5f, -0.5f,
-  0.5f,  0.5f, -0.5f,
-  0.5f,  0.5f,  0.5f,
-  0.5f,  0.5f,  0.5f,
-  -0.5f,  0.5f,  0.5f,
-  -0.5f,  0.5f, -0.5f,
+  -0.5f,  0.5f, -0.5f, 1, 0.5, 1,
+  0.5f,  0.5f, -0.5f, 1, 0.5, 1,
+  0.5f,  0.5f,  0.5f, 1, 0.5, 1,
+  0.5f,  0.5f,  0.5f, 1, 0.5, 1,
+  -0.5f,  0.5f,  0.5f, 1, 0.5, 1,
+  -0.5f,  0.5f, -0.5f, 1, 0.5, 1,
 };
 
-static GLuint vertexStride  = sizeof(GLfloat) * 3;
+static GLuint vertexStride  = sizeof(GLfloat) * 6;
 static void *positionOffset = (void *) 0;
-static int cubeElements = 36;
+static void *colorOffset = (void *) (sizeof(GLfloat) * 3);
+static int numElements = 36;
 
 void
 Cube::BindToShader(GLuint shaderProgram) {
@@ -57,6 +58,11 @@ Cube::BindToShader(GLuint shaderProgram) {
   GLint posAttrib = glGetAttribLocation(shaderProgram, "inVertPosition");
   glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, vertexStride, positionOffset);
   glEnableVertexAttribArray(posAttrib);
+  checkErrors();
+
+  GLint colorAttrib = glGetAttribLocation(shaderProgram, "inVertColor");
+  glVertexAttribPointer(colorAttrib, 3, GL_FLOAT, GL_FALSE, vertexStride, colorOffset);
+  glEnableVertexAttribArray(colorAttrib);
   checkErrors();
 }
 
@@ -91,5 +97,5 @@ Cube::Render(float time, GLint modelTransUniform) {
   modelTrans = glm::rotate(modelTrans, time, glm::vec3(0,0,1));
   glUniformMatrix4fv(modelTransUniform, 1, GL_FALSE, glm::value_ptr(modelTrans));
 
-  glDrawArrays(GL_TRIANGLES, 0, cubeElements);
+  glDrawArrays(GL_TRIANGLES, 0, numElements);
 }

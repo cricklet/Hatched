@@ -19,6 +19,7 @@ static GLint elements[] = {
 
 static GLuint vertexStride = sizeof(GLfloat) * 6;
 static void *positionOffset = (void *) 0;
+static void *colorOffset = (void *) (sizeof(GLfloat) * 3);
 static int numElements = 6 * 3;
 
 void
@@ -29,6 +30,11 @@ Pyramid::BindToShader(GLuint shaderProgram) {
   GLint posAttrib = glGetAttribLocation(shaderProgram, "inVertPosition");
   glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, vertexStride, positionOffset);
   glEnableVertexAttribArray(posAttrib);
+  checkErrors();
+
+  GLint colorAttrib = glGetAttribLocation(shaderProgram, "inVertColor");
+  glVertexAttribPointer(colorAttrib, 3, GL_FLOAT, GL_FALSE, vertexStride, colorOffset);
+  glEnableVertexAttribArray(colorAttrib);
   checkErrors();
 }
 
@@ -67,6 +73,7 @@ Pyramid::Render(float time, GLint modelTransUniform) {
   glEnable(GL_DEPTH_TEST);
 
   glm::mat4 modelTrans;
+  modelTrans = glm::translate(modelTrans, glm::vec3(0,1,0));
   modelTrans = glm::rotate(modelTrans, time, glm::vec3(0,0,1));
   glUniformMatrix4fv(modelTransUniform, 1, GL_FALSE, glm::value_ptr(modelTrans));
 
