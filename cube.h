@@ -9,13 +9,13 @@
 #include <GL/glew.h>
 
 class Cube {
-public:
+ public:
   Cube();
   ~Cube();
   void Render(float time, GLint modelTransUniform);
   void BindToShader(GLuint shaderProgram);
 
-private:
+ private:
   GLuint vao;
   GLuint vbo;
   
