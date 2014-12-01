@@ -8,14 +8,14 @@
 #define GLEW_STATIC
 #include <GL/glew.h>
 
-class Scene {
+class Cube {
 public:
-  Scene();
-  ~Scene();
-  void Render(GLint viewTransUniform, GLint projTransUniform, float t);
+  Cube();
+  ~Cube();
+  void Render();
+  void BindToShader(GLuint shaderProgram);
 
 private:
   GLuint vao;
   GLuint vbo;
-  GLuint shaderProgram;
 };
