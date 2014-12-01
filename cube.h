@@ -18,4 +18,6 @@ public:
 private:
   GLuint vao;
   GLuint vbo;
+  
+  GLint shaderProgram;
 };

@@ -87,6 +87,11 @@ int main (int argv, char *argc[]) {
     glUniformMatrix4fv(projTransUniform, 1, GL_FALSE, glm::value_ptr(projTrans));
     
     // Render cube
+    glUseProgram(shaderProgram);
+
+    glClearColor(1, 1, 1, 1);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
     cube->Render(time, modelTransUniform);
 
     SDL_GL_SwapWindow(window);
