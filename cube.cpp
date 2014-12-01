@@ -51,6 +51,9 @@ static int cubeElements = 36;
 
 void
 Cube::BindToShader(GLuint shaderProgram) {
+  glBindVertexArray(this->vao);
+  glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
+
   GLint posAttrib = glGetAttribLocation(shaderProgram, "inVertPosition");
   glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, vertexStride, positionOffset);
   glEnableVertexAttribArray(posAttrib);
@@ -78,11 +81,15 @@ Cube::~Cube() {
 }
 
 void
-Cube::Render() {
+Cube::Render(float time, GLint modelTransUniform) {
   glBindVertexArray(this->vao);
   glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
 
   glEnable(GL_DEPTH_TEST);
+
+  glm::mat4 modelTrans;
+  modelTrans = glm::rotate(modelTrans, time, glm::vec3(0,0,1));
+  glUniformMatrix4fv(modelTransUniform, 1, GL_FALSE, glm::value_ptr(modelTrans));
 
   glDrawArrays(GL_TRIANGLES, 0, cubeElements);
 }

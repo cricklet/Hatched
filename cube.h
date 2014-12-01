@@ -12,7 +12,7 @@ class Cube {
 public:
   Cube();
   ~Cube();
-  void Render();
+  void Render(float time, GLint modelTransUniform);
   void BindToShader(GLuint shaderProgram);
 
 private:

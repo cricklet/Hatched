@@ -19,6 +19,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "helper.h"
+#include "cube.h"
 
 int main (int argv, char *argc[]) {
   SDL_Init(SDL_INIT_VIDEO);
@@ -34,6 +35,35 @@ int main (int argv, char *argc[]) {
   glewExperimental = GL_TRUE; // necessary for modern opengl calls
   glewInit();
   checkErrors();
+
+  Cube *cube = new Cube();
+  checkErrors();
+
+  GLuint shaderProgram = generateShaderProgram("simple.vert", "simple.frag");
+  checkErrors();
+
+  glBindFragDataLocation(shaderProgram, 0, "outFragColor");
+  glUseProgram(shaderProgram);
+  checkErrors();
+
+  cube->BindToShader(shaderProgram);
+
+  glm::mat4 viewTrans = glm::lookAt(
+    glm::vec3(3.0f, 1.0f, 1.0f), // location of camera
+    glm::vec3(0,0,0), // direction of camera
+    glm::vec3(0,0,1)  // camera up vector
+  );
+
+  glm::mat4 projTrans = glm::perspective(
+    45.0f, // fov y
+    800.0f / 600.0f, // aspect
+    0.2f,  // near
+    10.0f  //far
+  );
+
+  GLint modelTransUniform = glGetUniformLocation(shaderProgram, "inVertModelTrans");
+  GLint viewTransUniform  = glGetUniformLocation(shaderProgram, "inVertViewTrans");
+  GLint projTransUniform  = glGetUniformLocation(shaderProgram, "inVertProjTrans");
 
   struct timeval t;
   gettimeofday(&t, NULL);
@@ -51,6 +81,13 @@ int main (int argv, char *argc[]) {
     gettimeofday(&t, NULL);
     long int currentTime = t.tv_sec * 1000 + t.tv_usec / 1000;
     float time = (float) (currentTime - startTime) / 1000.0f;
+
+    // Camera setup
+    glUniformMatrix4fv(viewTransUniform, 1, GL_FALSE, glm::value_ptr(viewTrans));
+    glUniformMatrix4fv(projTransUniform, 1, GL_FALSE, glm::value_ptr(projTrans));
+    
+    // Render cube
+    cube->Render(time, modelTransUniform);
 
     SDL_GL_SwapWindow(window);
     checkErrors();
