@@ -20,6 +20,7 @@
 
 #include "helper.h"
 #include "cube.h"
+#include "pyramid.h"
 
 int main (int argv, char *argc[]) {
   SDL_Init(SDL_INIT_VIDEO);
@@ -36,7 +37,7 @@ int main (int argv, char *argc[]) {
   glewInit();
   checkErrors();
 
-  Cube *cube = new Cube();
+  Pyramid *cube = new Pyramid();
   checkErrors();
 
   GLuint shaderProgram = generateShaderProgram("simple.vert", "simple.frag");
@@ -93,6 +94,7 @@ int main (int argv, char *argc[]) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
     cube->Render(time, modelTransUniform);
+    checkErrors();
 
     SDL_GL_SwapWindow(window);
     checkErrors();
