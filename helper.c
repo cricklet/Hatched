@@ -11,6 +11,10 @@
 
 #include "helper.h"
 
+float random(float max) {
+  return max * ((float) rand()) / ((float) RAND_MAX);
+}
+
 bool _checkErrors(const char *filename, int line) {
   bool result = false;
 

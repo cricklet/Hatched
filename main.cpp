@@ -1,4 +1,5 @@
 #include <string>
+#include <vector>
 #include <fstream>
 #include <streambuf>
 
@@ -20,7 +21,6 @@
 
 #include "helper.h"
 #include "cube.h"
-#include "pyramid.h"
 
 int main (int argv, char *argc[]) {
   SDL_Init(SDL_INIT_VIDEO);
@@ -37,23 +37,51 @@ int main (int argv, char *argc[]) {
   glewInit();
   checkErrors();
 
-  Cube *cube = new Cube();
-  Pyramid *pyr = new Pyramid();
+  Cube *cube1 = new Cube();
+  Cube *cube2 = new Cube();
   checkErrors();
 
-  GLuint shaderProgram = generateShaderProgram("simple.vert", "simple.frag");
-  checkErrors();
+  std::vector<std::string> vertSources;
+  std::vector<std::string> fragSources;
 
-  glBindFragDataLocation(shaderProgram, 0, "outFragColor");
-  glUseProgram(shaderProgram);
-  checkErrors();
+  vertSources.push_back("simple.vert");
+  vertSources.push_back("dir_light.vert");
 
-  cube->BindToShader(shaderProgram);
-  pyr->BindToShader(shaderProgram);
+  fragSources.push_back("simple.frag");
+  fragSources.push_back("dir_light.frag");
+
+  GLuint shaderPrograms[2];
+
+  GLint modelTransUniforms[2];
+  GLint viewTransUniforms[2];
+  GLint projTransUniforms[2];
+  GLint colorUniforms[2];
+
+  int numShaders = 2;
+  int shaderIndex = 0;
+
+  for (int i = 0; i < numShaders; i ++) {
+    GLuint shaderProgram = generateShaderProgram(vertSources[i].c_str(), fragSources[i].c_str());
+    checkErrors();
+
+    glBindFragDataLocation(shaderProgram, 0, "outFragColor");
+    glUseProgram(shaderProgram);
+    checkErrors();
+
+    modelTransUniforms[i] = glGetUniformLocation(shaderProgram, "inVertModelTrans");
+    viewTransUniforms[i] = glGetUniformLocation(shaderProgram, "inVertViewTrans");
+    projTransUniforms[i] = glGetUniformLocation(shaderProgram, "inVertProjTrans");
+    colorUniforms[i] = glGetUniformLocation(shaderProgram, "inColor");
+
+    cube1->BindToShader(shaderProgram);
+    cube2->BindToShader(shaderProgram);
+
+    shaderPrograms[i] = shaderProgram;
+  }
 
   glm::mat4 viewTrans = glm::lookAt(
-    glm::vec3(3.0f, 1.0f, 1.0f), // location of camera
-    glm::vec3(0,0,0), // direction of camera
+    glm::vec3(3.0f, 0.0f, 1.0f), // location of camera
+    glm::vec3(0,0,0), // look at
     glm::vec3(0,0,1)  // camera up vector
   );
 
@@ -64,10 +92,6 @@ int main (int argv, char *argc[]) {
     10.0f  //far
   );
 
-  GLint modelTransUniform = glGetUniformLocation(shaderProgram, "inVertModelTrans");
-  GLint viewTransUniform  = glGetUniformLocation(shaderProgram, "inVertViewTrans");
-  GLint projTransUniform  = glGetUniformLocation(shaderProgram, "inVertProjTrans");
-
   struct timeval t;
   gettimeofday(&t, NULL);
   long int startTime = t.tv_sec * 1000 + t.tv_usec / 1000;
@@ -76,8 +100,11 @@ int main (int argv, char *argc[]) {
   while (true) {
     if (SDL_PollEvent(&windowEvent)) {
       if (windowEvent.type == SDL_QUIT) break;
-      if (windowEvent.type == SDL_KEYUP) {
+      if (windowEvent.type == SDL_KEYDOWN) {
 	if (windowEvent.key.keysym.sym == SDLK_ESCAPE) break;
+	if (windowEvent.key.keysym.sym == SDLK_s) {
+	  shaderIndex = (shaderIndex + 1) % numShaders;
+	}
       }
     }
 
@@ -86,19 +113,20 @@ int main (int argv, char *argc[]) {
     float time = (float) (currentTime - startTime) / 1000.0f;
 
     // Camera setup
-    glUniformMatrix4fv(viewTransUniform, 1, GL_FALSE, glm::value_ptr(viewTrans));
-    glUniformMatrix4fv(projTransUniform, 1, GL_FALSE, glm::value_ptr(projTrans));
+    glUniformMatrix4fv(viewTransUniforms[shaderIndex], 1, GL_FALSE, glm::value_ptr(viewTrans));
+    glUniformMatrix4fv(projTransUniforms[shaderIndex], 1, GL_FALSE, glm::value_ptr(projTrans));
     
     // Render cube
-    glUseProgram(shaderProgram);
+    glUseProgram(shaderPrograms[shaderIndex]);
 
     glClearColor(1, 1, 1, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-    cube->Render(time, modelTransUniform);
-    checkErrors();
+    glm::mat4 world1 = glm::mat4();
+    glm::mat4 world2 = glm::translate(glm::mat4(), glm::vec3(-0.5f,-1.0f,0.5f));
 
-    pyr->Render(time, modelTransUniform);
+    cube1->Render(time + 0.5f, modelTransUniforms[shaderIndex], world1, colorUniforms[shaderIndex]);
+    cube2->Render(time, modelTransUniforms[shaderIndex], world2, colorUniforms[shaderIndex]);
     checkErrors();
 
     SDL_GL_SwapWindow(window);

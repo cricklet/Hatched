@@ -12,10 +12,12 @@ class Cube {
 public:
   Cube();
   ~Cube();
-  void Render(float time, GLint modelTransUniform);
+  void Render(float time, GLint modelTransUniform, const glm::mat4 worldTrans, GLint colorUniform);
   void BindToShader(GLuint shaderProgram);
 
 private:
   GLuint vao;
   GLuint vbo;
+
+  glm::vec3 color;
 };
