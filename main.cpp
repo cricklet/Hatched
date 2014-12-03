@@ -21,6 +21,7 @@
 
 #include "helper.h"
 #include "cube.h"
+#include "camera.h"
 
 int main (int argv, char *argc[]) {
   SDL_Init(SDL_INIT_VIDEO);
@@ -36,6 +37,8 @@ int main (int argv, char *argc[]) {
   glewExperimental = GL_TRUE; // necessary for modern opengl calls
   glewInit();
   checkErrors();
+
+  Camera *camera = new Camera();
 
   Cube *cube1 = new Cube();
   Cube *cube2 = new Cube();
@@ -96,16 +99,24 @@ int main (int argv, char *argc[]) {
   gettimeofday(&t, NULL);
   long int startTime = t.tv_sec * 1000 + t.tv_usec / 1000;
 
+  bool quit = false;
+
   SDL_Event windowEvent;
-  while (true) {
-    if (SDL_PollEvent(&windowEvent)) {
-      if (windowEvent.type == SDL_QUIT) break;
+  while (quit == false) {
+    while (SDL_PollEvent(&windowEvent)) {
+      if (windowEvent.type == SDL_QUIT) {
+	quit = true;
+      }
       if (windowEvent.type == SDL_KEYDOWN) {
-	if (windowEvent.key.keysym.sym == SDLK_ESCAPE) break;
+	if (windowEvent.key.keysym.sym == SDLK_ESCAPE) {
+	  quit = true;
+	}
 	if (windowEvent.key.keysym.sym == SDLK_s) {
 	  shaderIndex = (shaderIndex + 1) % numShaders;
 	}
       }
+
+      camera->HandleEvent(windowEvent);
     }
 
     gettimeofday(&t, NULL);
@@ -113,8 +124,7 @@ int main (int argv, char *argc[]) {
     float time = (float) (currentTime - startTime) / 1000.0f;
 
     // Camera setup
-    glUniformMatrix4fv(viewTransUniforms[shaderIndex], 1, GL_FALSE, glm::value_ptr(viewTrans));
-    glUniformMatrix4fv(projTransUniforms[shaderIndex], 1, GL_FALSE, glm::value_ptr(projTrans));
+    camera->SetupTransforms(viewTransUniforms[shaderIndex], projTransUniforms[shaderIndex]);
     
     // Render cube
     glUseProgram(shaderPrograms[shaderIndex]);
