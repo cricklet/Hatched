@@ -103,15 +103,15 @@ int main (int argv, char *argc[]) {
   while (quit == false) {
     while (SDL_PollEvent(&windowEvent)) {
       if (windowEvent.type == SDL_QUIT) {
-	quit = true;
+        quit = true;
       }
       if (windowEvent.type == SDL_KEYDOWN) {
-	if (windowEvent.key.keysym.sym == SDLK_ESCAPE) {
-	  quit = true;
-	}
-	if (windowEvent.key.keysym.sym == SDLK_s) {
-	  shaderIndex = (shaderIndex + 1) % numShaders;
-	}
+        if (windowEvent.key.keysym.sym == SDLK_ESCAPE) {
+          quit = true;
+        }
+        if (windowEvent.key.keysym.sym == SDLK_s) {
+          shaderIndex = (shaderIndex + 1) % numShaders;
+        }
       }
 
       camera->HandleEvent(windowEvent);
@@ -120,37 +120,36 @@ int main (int argv, char *argc[]) {
     gettimeofday(&t, NULL);
     long int currentTime = t.tv_sec * 1000 + t.tv_usec / 1000;
     float time = (float) (currentTime - startTime) / 1000.0f;
-    
+
     // Render cube
     glUseProgram(shaderPrograms[shaderIndex]);
     checkErrors();
 
     // Camera setup
     camera->SetupTransforms(shaderUniforms[shaderIndex].viewTrans,
-			    shaderUniforms[shaderIndex].projTrans);
+          shaderUniforms[shaderIndex].projTrans);
     checkErrors();
 
     glClearColor(1, 1, 1, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     checkErrors();
 
+    // render model
+    model->Render(shaderUniforms[shaderIndex]);
+
+    // render cube 1
     glm::mat4 world1 = glm::mat4();
     glm::mat4 model1 = glm::rotate(world1, time, glm::vec3(0,0,1));
-
-    glm::mat4 world2 = glm::translate(glm::mat4(), glm::vec3(-0.5f,-1.0f,0.5f));
-    glm::mat4 model2 = glm::rotate(world2, time, glm::vec3(0,0,1));
-
     glUniformMatrix4fv(shaderUniforms[shaderIndex].modelTrans,
-		       1, GL_FALSE, glm::value_ptr(model1));
-    checkErrors();
-
+                       1, GL_FALSE, glm::value_ptr(model1));
     cube1->Render(shaderUniforms[shaderIndex]);
     checkErrors();
 
+    // render cube 2
+    glm::mat4 world2 = glm::translate(glm::mat4(), glm::vec3(-0.5f,-1.0f,0.5f));
+    glm::mat4 model2 = glm::rotate(world2, time, glm::vec3(0,0,1));
     glUniformMatrix4fv(shaderUniforms[shaderIndex].modelTrans,
-		       1, GL_FALSE, glm::value_ptr(model2));
-    checkErrors();
-
+                       1, GL_FALSE, glm::value_ptr(model2));
     cube2->Render(shaderUniforms[shaderIndex]);
     checkErrors();
 

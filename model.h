@@ -23,12 +23,8 @@ using namespace std;
 class Model {
  public:
   Model(string path);
-  void Draw(const Uniforms &uniforms);
+  void Render(const Uniforms &uniforms);
 
  private:
   vector<Mesh> meshes;
-  string directory;
-  vector<Texture> textures;
-
-  void ProcessNode(aiNode *node, const aiScene *scene);
 };

@@ -23,22 +23,17 @@ struct Vertex {
   glm::vec2 uv;
 };
 
-struct Texture {
-  GLuint index;
-};
-
 class Mesh {
  public:
-  Mesh(const vector<Vertex> vertices, vector<GLuint> indices, vector<Texture> textures);
+  Mesh(const vector<Vertex> vertices, vector<GLuint> indices, GLuint textureIndex);
 
   vector<Vertex> vertices;
   vector<GLuint> indices;
-  vector<Texture> textures;
   
-  void Draw(const Uniforms &uniforms);
+  void Render(const Uniforms &uniforms);
   
  private:
-  GLuint vao, vbo, ebo;
+  GLuint vao, vbo, ebo, textureIndex;
 };  
 
 #endif
