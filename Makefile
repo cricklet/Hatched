@@ -1,7 +1,20 @@
 CC = g++-4.9
-SDL_INCLUDE = -I/usr/local/include -D_THREAD_SAFE
-SDL_LIB = -L/usr/local/lib -lSDL2 -lGLEW -lSOIL -lASSIMP
+INCLUDE = -I/usr/local/include -D_THREAD_SAFE
+LIB = -L/usr/local/lib -lSDL2 -lGLEW -lSOIL -lASSIMP
+FRAMEWORK = -framework OpenGL
 OPTS = -std=c++11
 
-all:
-	$(CC) main.cpp helper.c cube.cpp mesh.cpp model.cpp camera.cpp -framework OpenGL -o main $(SDL_INCLUDE) $(SDL_LIB) $(OPTS)
+CPP_FILES := $(wildcard *.cpp)
+OBJ_FILES := $(notdir $(CPP_FILES:.cpp=.o))
+
+all: main
+
+main: $(OBJ_FILES)
+	$(CC) $(FRAMEWORK) $(INCLUDE) $(LIB) $(OPTS) -o $@ $^
+
+%.o: %.cpp
+	$(CC) $(FRAMEWORK) $(INCLUDE) $(LIB) $(OPTS) -c -o $@ $<
+
+clean:
+	@- rm -f *.o
+	@- rm -f main

@@ -3,7 +3,7 @@
 Model::Model(string path) {
   Assimp::Importer importer;
   unsigned int flags = aiProcess_GenNormals | aiProcess_Triangulate | aiProcess_FlipUVs;
-  aiScene* scene = importer.ReadFile(path, flags);
+  const aiScene* scene = importer.ReadFile(path, flags);
 
   if(!scene || scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
     cerr << "Couldn't load scene: " << importer.GetErrorString() << endl;
