@@ -23,6 +23,8 @@
 #include "cube.h"
 #include "camera.h"
 #include "shared.h"
+#include "mesh.h"
+#include "model.h"
 
 int main (int argv, char *argc[]) {
   SDL_Init(SDL_INIT_VIDEO);
@@ -43,6 +45,7 @@ int main (int argv, char *argc[]) {
 
   Cube *cube1 = new Cube("kitten.png");
   Cube *cube2 = new Cube("puppy.png");
+  Model *model = new Model("nanosuit/nanosuit2.obj");
   checkErrors();
 
   std::vector<std::string> vertSources;

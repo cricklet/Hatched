@@ -1,7 +1,7 @@
 #include "cube.h"
 #include "helper.h"
 
-GLfloat vertices[] = {
+static GLfloat vertices[] = {
   -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0,0, // location, normal, uv
   0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1,0,
   0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1,1,
@@ -105,7 +105,6 @@ Cube::~Cube() {
 void
 Cube::Render(const Uniforms &uniforms) {
   glBindVertexArray(this->vao);
-  glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
   checkErrors();
 
   glEnable(GL_DEPTH_TEST);
@@ -117,4 +116,6 @@ Cube::Render(const Uniforms &uniforms) {
 
   glDrawArrays(GL_TRIANGLES, 0, numElements);
   checkErrors();
+
+  glBindVertexArray(0);
 }
