@@ -12,10 +12,12 @@ class Cube {
 public:
   Cube(const char *texture);
   ~Cube();
-  void Render();
+  void Render(GLint colorUniform);
   void BindToShader(GLuint shaderProgram);
 
 private:
   GLuint vao;
   GLuint vbo;
+
+  glm::vec3 color;
 };

@@ -58,6 +58,7 @@ int main (int argv, char *argc[]) {
   GLint modelTransUniforms[2];
   GLint viewTransUniforms[2];
   GLint projTransUniforms[2];
+  GLint colorUniforms[2];
 
   int numShaders = 2;
   int shaderIndex = 0;
@@ -73,6 +74,7 @@ int main (int argv, char *argc[]) {
     modelTransUniforms[i] = glGetUniformLocation(shaderProgram, "inVertModelTrans");
     viewTransUniforms[i] = glGetUniformLocation(shaderProgram, "inVertViewTrans");
     projTransUniforms[i] = glGetUniformLocation(shaderProgram, "inVertProjTrans");
+    colorUniforms[i] = glGetUniformLocation(shaderProgram, "inColor");
 
     cube1->BindToShader(shaderProgram);
     cube2->BindToShader(shaderProgram);
@@ -138,11 +140,11 @@ int main (int argv, char *argc[]) {
 
     glUniformMatrix4fv(modelTransUniforms[shaderIndex],
 		       1, GL_FALSE, glm::value_ptr(model1));
-    cube1->Render();
+    cube1->Render(colorUniforms[shaderIndex]);
 
     glUniformMatrix4fv(modelTransUniforms[shaderIndex],
 		       1, GL_FALSE, glm::value_ptr(model2));
-    cube2->Render();
+    cube2->Render(colorUniforms[shaderIndex]);
     checkErrors();
 
     SDL_GL_SwapWindow(window);
