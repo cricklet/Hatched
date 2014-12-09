@@ -10,9 +10,9 @@
 
 class Cube {
 public:
-  Cube();
+  Cube(const char *texture);
   ~Cube();
-  void Render(float time, GLint modelTransUniform, const glm::mat4 worldTrans, GLint colorUniform);
+  void Render(GLint colorUniform);
   void BindToShader(GLuint shaderProgram);
 
 private:

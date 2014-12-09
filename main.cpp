@@ -40,8 +40,8 @@ int main (int argv, char *argc[]) {
 
   Camera *camera = new Camera();
 
-  Cube *cube1 = new Cube();
-  Cube *cube2 = new Cube();
+  Cube *cube1 = new Cube("kitten.png");
+  Cube *cube2 = new Cube("puppy.png");
   checkErrors();
 
   std::vector<std::string> vertSources;
@@ -133,10 +133,18 @@ int main (int argv, char *argc[]) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
     glm::mat4 world1 = glm::mat4();
-    glm::mat4 world2 = glm::translate(glm::mat4(), glm::vec3(-0.5f,-1.0f,0.5f));
+    glm::mat4 model1 = glm::rotate(world1, time, glm::vec3(0,0,1));
 
-    cube1->Render(time + 0.5f, modelTransUniforms[shaderIndex], world1, colorUniforms[shaderIndex]);
-    cube2->Render(time, modelTransUniforms[shaderIndex], world2, colorUniforms[shaderIndex]);
+    glm::mat4 world2 = glm::translate(glm::mat4(), glm::vec3(-0.5f,-1.0f,0.5f));
+    glm::mat4 model2 = glm::rotate(world2, time, glm::vec3(0,0,1));
+
+    glUniformMatrix4fv(modelTransUniforms[shaderIndex],
+		       1, GL_FALSE, glm::value_ptr(model1));
+    cube1->Render(colorUniforms[shaderIndex]);
+
+    glUniformMatrix4fv(modelTransUniforms[shaderIndex],
+		       1, GL_FALSE, glm::value_ptr(model2));
+    cube2->Render(colorUniforms[shaderIndex]);
     checkErrors();
 
     SDL_GL_SwapWindow(window);
