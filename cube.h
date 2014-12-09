@@ -8,11 +8,13 @@
 #define GLEW_STATIC
 #include <GL/glew.h>
 
+#include "shared.h"
+
 class Cube {
 public:
   Cube(const char *texture);
   ~Cube();
-  void Render(GLint colorUniform);
+  void Render(const Uniforms &uniforms);
   void BindToShader(GLuint shaderProgram);
 
 private:
@@ -20,4 +22,5 @@ private:
   GLuint vbo;
 
   glm::vec3 color;
+  GLint textureIndex;
 };

@@ -76,7 +76,7 @@ Cube::BindToShader(GLuint shaderProgram) {
   }
 }
 
-Cube::Cube(const char *texture) {
+Cube::Cube(const char *textureSource) {
   // Generate vertex array object
   glGenVertexArrays(1, &this->vao);
   glBindVertexArray(this->vao);
@@ -91,7 +91,10 @@ Cube::Cube(const char *texture) {
   // Generate random color
   this->color = glm::vec3(random(1), random(1), random(1));
 
-  glBindVertexArray(0);
+  // Bind texture
+  this->textureIndex = nextTextureIndex();
+  loadTexture(textureSource, this->textureIndex);
+  checkErrors();
 }
 
 Cube::~Cube() {
@@ -100,12 +103,18 @@ Cube::~Cube() {
 }
 
 void
-Cube::Render(GLint colorUniform) {
+Cube::Render(const Uniforms &uniforms) {
   glBindVertexArray(this->vao);
   glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
+  checkErrors();
 
   glEnable(GL_DEPTH_TEST);
+  checkErrors();
 
-  glUniform3fv(colorUniform, 1, glm::value_ptr(this->color));
+  glUniform3fv(uniforms.color, 1, glm::value_ptr(this->color));
+  glUniform1i(uniforms.texture, this->textureIndex);
+  checkErrors();
+
   glDrawArrays(GL_TRIANGLES, 0, numElements);
+  checkErrors();
 }
