@@ -74,6 +74,12 @@ Cube::BindToShader(GLuint shaderProgram) {
     glEnableVertexAttribArray(uvAttrib);
     checkErrors();
   }
+
+  GLint colorAttrib = glGetAttribLocation(shaderProgram, "inVertColor");
+  if (colorAttrib != -1) {
+    glVertexAttrib3f(colorAttrib, random(1), random(1), random(1));
+    checkErrors();
+  }
 }
 
 Cube::Cube(const char *texture) {
@@ -88,9 +94,6 @@ Cube::Cube(const char *texture) {
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
   checkErrors();
 
-  // Generate random color
-  this->color = glm::vec3(random(1), random(1), random(1));
-
   glBindVertexArray(0);
 }
 
@@ -100,12 +103,11 @@ Cube::~Cube() {
 }
 
 void
-Cube::Render(GLint colorUniform) {
+Cube::Render() {
   glBindVertexArray(this->vao);
   glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
 
   glEnable(GL_DEPTH_TEST);
 
-  glUniform3fv(colorUniform, 1, glm::value_ptr(this->color));
   glDrawArrays(GL_TRIANGLES, 0, numElements);
 }

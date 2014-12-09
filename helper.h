@@ -4,6 +4,9 @@
 #define GLEW_STATIC
 #include <GL/glew.h>
 
+#include <iostream>
+#include <stdexcept>
+
 float random(float max);
 
 bool _checkErrors(const char *filename, int line);

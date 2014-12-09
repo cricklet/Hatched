@@ -1,8 +1,8 @@
 #version 150
 
+in vec3 outVertColor;
 out vec4 outFragColor;
-uniform vec3 inColor;
 
 void main() {
-  outFragColor = vec4(inColor, 1.0);
+  outFragColor = vec4(outVertColor, 1.0);
 }
