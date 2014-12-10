@@ -8,7 +8,7 @@
 #define GLEW_STATIC
 #include <GL/glew.h>
 
-#include "shared.h"
+#include "helper.h"
 
 class Cube {
 public:

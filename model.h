@@ -20,7 +20,6 @@ using namespace std;
 #include <assimp/postprocess.h>
 
 #include "helper.h"
-#include "shared.h"
 #include "mesh.h"
 
 class Model {

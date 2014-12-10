@@ -22,7 +22,6 @@
 #include "helper.h"
 #include "cube.h"
 #include "camera.h"
-#include "shared.h"
 #include "mesh.h"
 #include "model.h"
 

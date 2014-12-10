@@ -1,5 +1,6 @@
 #include "model.h"
 #include "mesh.h"
+#include "helper.h"
 
 template<typename Func>
 static void recursivelyProcess(aiNode* node, const aiScene* scene, Func processMesh) {
@@ -49,9 +50,7 @@ static Mesh generateMesh(aiMesh *mesh, const aiScene *scene) {
       indices.push_back(face.mIndices[j]);
   }
 
-  // Process material
-  GLuint textureIndex;
-  return Mesh(vertices, indices, textureIndex);
+  return Mesh(vertices, indices);
 }
 
 Model::Model(string path) {
@@ -82,5 +81,6 @@ void Model::Render(const Uniforms &uniforms) {
 
   for (Mesh m : this->meshes) {
     m.Render(uniforms);
+    checkErrors();
   }
 }

@@ -110,9 +110,18 @@ Cube::Render(const Uniforms &uniforms) {
   glEnable(GL_DEPTH_TEST);
   checkErrors();
 
-  glUniform3fv(uniforms.color, 1, glm::value_ptr(this->color));
-  glUniform1i(uniforms.texture, this->textureIndex);
-  checkErrors();
+  if (uniforms.useTexture != -1) {
+    glUniform1i(uniforms.useTexture, 1);
+    checkErrors();
+  }
+  if (uniforms.color != -1) {
+    glUniform3fv(uniforms.color, 1, glm::value_ptr(this->color));
+    checkErrors();
+  }
+  if (uniforms.texture != -1) {
+    glUniform1i(uniforms.texture, this->textureIndex);
+    checkErrors();
+  }
 
   glDrawArrays(GL_TRIANGLES, 0, numElements);
   checkErrors();

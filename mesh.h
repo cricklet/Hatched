@@ -15,7 +15,7 @@
 #include <vector>
 using namespace std;
 
-#include "shared.h"
+#include "helper.h"
 
 struct Vertex {
   glm::vec3 position;
@@ -25,7 +25,7 @@ struct Vertex {
 
 class Mesh {
 public:
-  Mesh(const vector<Vertex> vertices, vector<GLuint> indices, GLuint textureIndex);
+  Mesh(const vector<Vertex> vertices, vector<GLuint> indices);
 
   vector<Vertex> vertices;
   vector<GLuint> indices;
@@ -33,7 +33,8 @@ public:
   void Render(const Uniforms &uniforms);
 
 private:
-  GLuint vao, vbo, ebo, textureIndex;
+  GLuint vao, vbo, ebo;
+  glm::vec3 color;
 };
 
 #endif

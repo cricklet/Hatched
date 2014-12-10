@@ -11,6 +11,8 @@
 
 #include "helper.h"
 
+using namespace std;
+
 float random(float max) {
   return max * ((float) rand()) / ((float) RAND_MAX);
 }
@@ -20,7 +22,7 @@ bool _checkErrors(const char *filename, int line) {
 
   GLenum error;
   while ((error = glGetError()) != GL_NO_ERROR) {
-    std::string str;
+    string str;
 
     switch (error) {
       case GL_INVALID_OPERATION:
@@ -40,8 +42,8 @@ bool _checkErrors(const char *filename, int line) {
         break;
     }
 
-    // std::cerr << "GL_" << str.c_str() << "\n";
-    std::cerr << "GL_" << str.c_str() << " - " << filename << ":" << line << "\n";
+    // cerr << "GL_" << str.c_str() << "\n";
+    cerr << "GL_" << str.c_str() << " - " << filename << ":" << line << "\n";
     result = true;
   }
 
@@ -50,7 +52,7 @@ bool _checkErrors(const char *filename, int line) {
 
 static int _id = 0;
 int nextTextureIndex() {
-  std::cout << _id << "\n";
+  cout << "Next texture index: " << _id << "\n";
   return _id++;
 }
 
@@ -81,7 +83,7 @@ static char *getFileContents(const char *filename) {
 
   file = fopen(filename, "rb");
   if (!file) {
-    throw std::runtime_error(std::string("Failed to open file: ") + filename);
+    throw runtime_error(string("Failed to open file: ") + filename);
   }
 
   // how big is the file?
@@ -92,13 +94,13 @@ static char *getFileContents(const char *filename) {
   // make a buffer big enough to hold the file
   buffer = (char *) calloc(fileSize + 1, 1);
   if (!buffer) {
-    throw std::runtime_error(std::string("Failed to create buffer for: ") + filename);
+    throw runtime_error(string("Failed to create buffer for: ") + filename);
   }
 
   // copy the file into the buffer
   int result = fread(buffer, fileSize, 1, file);
   if (result != 1) {
-    throw std::runtime_error(std::string("Failed to copy file: ") + filename);
+    throw runtime_error(string("Failed to copy file: ") + filename);
   }
 
   fclose(file);
@@ -109,8 +111,8 @@ static GLuint compileShader(const char *filename, GLenum shaderType) {
   char *fileContents;
   try {
     fileContents = getFileContents(filename);
-  } catch (std::exception &e) {
-    std::cerr << "Exception caught: " << e.what() << "\n";
+  } catch (exception &e) {
+    cerr << "Exception caught: " << e.what() << "\n";
   }
 
   GLuint shader = glCreateShader(shaderType);
@@ -121,12 +123,12 @@ static GLuint compileShader(const char *filename, GLenum shaderType) {
   GLint status;
   glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
   if (status != GL_TRUE) {
-    std::cerr << "Failed to compile shader\n";
+    cerr << "Failed to compile shader\n";
     char buffer[512];
     glGetShaderInfoLog(shader, 512, NULL, buffer);
-    std::cerr << buffer << "\n";
+    cerr << buffer << "\n";
 
-    throw std::runtime_error(std::string("Failed to compile shader: ") + filename);
+    throw runtime_error(string("Failed to compile shader: ") + filename);
   }
 
   free(fileContents);
@@ -152,5 +154,22 @@ static GLuint generateShaderProgram(const char *vertSource, const char *fragSour
 
 GLuint generateShaderProgram(string vertSource, string fragSource) {
   return generateShaderProgram(vertSource.c_str(), fragSource.c_str());
+}
+
+void setupUniforms(Uniforms &uniforms, GLint shaderProgram) {
+  uniforms.modelTrans = glGetUniformLocation(shaderProgram, "unifModelTrans");
+  uniforms.viewTrans = glGetUniformLocation(shaderProgram, "unifViewTrans");
+  uniforms.projTrans = glGetUniformLocation(shaderProgram, "unifProjTrans");
+  uniforms.useTexture = glGetUniformLocation(shaderProgram, "unifUseTexture");
+  uniforms.color = glGetUniformLocation(shaderProgram, "unifColor");
+  uniforms.texture = glGetUniformLocation(shaderProgram, "unifTexture");
+
+  cout << "Loaded uniforms for: " << shaderProgram << "\n";
+  cout << "  modelTrans: " << uniforms.modelTrans << "\n";
+  cout << "  viewTrans: " << uniforms.viewTrans << "\n";
+  cout << "  projTrans: " << uniforms.projTrans << "\n";
+  cout << "  useTexture: " << uniforms.useTexture << "\n";
+  cout << "  color: " << uniforms.color << "\n";
+  cout << "  texture: " << uniforms.texture << "\n";
 }
 
