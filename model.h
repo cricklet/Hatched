@@ -26,7 +26,9 @@ class Model {
  public:
   Model(string path);
   void Render(const Uniforms &uniforms);
+  void BindToShader(GLuint shaderProgram);
 
  private:
   vector<Mesh> meshes;
+  Bounds bounds;
 };

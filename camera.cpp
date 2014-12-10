@@ -3,8 +3,8 @@
 #include <iostream>
 
 Camera::Camera() {
-  this->location = glm::vec3(3.0f, 1.0f, 1.0f);
-  this->origin = glm::vec3(0,0,0.5);
+  this->location = glm::vec3(3,0,2);
+  this->origin = glm::vec3(0,0,0);
   this->up = glm::vec3(0,0,1);
 
   this->projTrans = glm::perspective(

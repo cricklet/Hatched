@@ -6,6 +6,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include <limits>
+
 #include <sys/time.h>
 
 #define GLEW_STATIC
@@ -23,6 +25,15 @@ struct Vertex {
   glm::vec2 uv;
 };
 
+struct Bounds {
+  float minx = FLT_MIN;
+  float miny = FLT_MIN;
+  float minz = FLT_MIN;
+  float maxx = FLT_MAX;
+  float maxy = FLT_MAX;
+  float maxz = FLT_MAX;
+};
+
 class Mesh {
 public:
   Mesh(const vector<Vertex> vertices, vector<GLuint> indices);
@@ -31,6 +42,9 @@ public:
   vector<GLuint> indices;
 
   void Render(const Uniforms &uniforms);
+  void BindToShader(GLuint shaderProgram);
+
+  Bounds GetBounds();
 
 private:
   GLuint vao, vbo, ebo;

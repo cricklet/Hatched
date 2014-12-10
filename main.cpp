@@ -77,6 +77,7 @@ int main(int argv, char *argc[]) {
 
     cube1->BindToShader(shaderProgram);
     cube2->BindToShader(shaderProgram);
+    model->BindToShader(shaderProgram);
 
     shaderPrograms[i] = shaderProgram;
   }
@@ -139,15 +140,15 @@ int main(int argv, char *argc[]) {
 
     // render cube 1
     glm::mat4 world1 = glm::translate(glm::mat4(), glm::vec3(0.5f, 1.0f, 0.5f));
-    glm::mat4 model1 = glm::rotate(world1, time, glm::vec3(0, 0, 1));
-    glUniformMatrix4fv(shaderUniforms[shaderIndex].modelTrans, 1, GL_FALSE, glm::value_ptr(model1));
+    glm::mat4 model1 = glm::rotate(glm::mat4(), time, glm::vec3(0, 0, 1));
+    glUniformMatrix4fv(shaderUniforms[shaderIndex].modelTrans, 1, GL_FALSE, glm::value_ptr(world1 * model1));
     cube1->Render(shaderUniforms[shaderIndex]);
     checkErrors();
 
     // render cube 2
     glm::mat4 world2 = glm::translate(glm::mat4(), glm::vec3(-0.5f, -1.0f, 0.5f));
-    glm::mat4 model2 = glm::rotate(world2, time, glm::vec3(0, 0, 1));
-    glUniformMatrix4fv(shaderUniforms[shaderIndex].modelTrans, 1, GL_FALSE, glm::value_ptr(model2));
+    glm::mat4 model2 = glm::rotate(glm::mat4(), time, glm::vec3(0, 0, 1));
+    glUniformMatrix4fv(shaderUniforms[shaderIndex].modelTrans, 1, GL_FALSE, glm::value_ptr(world2 * model2));
     cube2->Render(shaderUniforms[shaderIndex]);
     checkErrors();
 
