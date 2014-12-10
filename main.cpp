@@ -26,7 +26,9 @@
 #include "mesh.h"
 #include "model.h"
 
-int main (int argv, char *argc[]) {
+using namespace std;
+
+int main(int argv, char *argc[]) {
   SDL_Init(SDL_INIT_VIDEO);
   SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 
@@ -48,8 +50,8 @@ int main (int argv, char *argc[]) {
   Model *model = new Model("nanosuit/nanosuit2.obj");
   checkErrors();
 
-  std::vector<std::string> vertSources;
-  std::vector<std::string> fragSources;
+  vector<string> vertSources;
+  vector<string> fragSources;
 
   vertSources.push_back("simple.vert");
   vertSources.push_back("dir_light.vert");
@@ -64,8 +66,8 @@ int main (int argv, char *argc[]) {
   int numShaders = 2;
   int shaderIndex = 0;
 
-  for (int i = 0; i < numShaders; i ++) {
-    GLuint shaderProgram = generateShaderProgram(vertSources[i].c_str(), fragSources[i].c_str());
+  for (int i = 0; i < numShaders; i++) {
+    GLuint shaderProgram = generateShaderProgram(vertSources[i], fragSources[i]);
     checkErrors();
 
     glBindFragDataLocation(shaderProgram, 0, "outFragColor");
@@ -81,16 +83,16 @@ int main (int argv, char *argc[]) {
   }
 
   glm::mat4 viewTrans = glm::lookAt(
-    glm::vec3(3.0f, 0.0f, 1.0f), // location of camera
-    glm::vec3(0,0,0), // look at
-    glm::vec3(0,0,1)  // camera up vector
+      glm::vec3(3.0f, 0.0f, 1.0f), // location of camera
+      glm::vec3(0, 0, 0), // look at
+      glm::vec3(0, 0, 1)  // camera up vector
   );
 
   glm::mat4 projTrans = glm::perspective(
-    45.0f, // fov y
-    800.0f / 600.0f, // aspect
-    0.2f,  // near
-    10.0f  //far
+      45.0f, // fov y
+      800.0f / 600.0f, // aspect
+      0.2f,  // near
+      10.0f  //far
   );
 
   struct timeval t;
@@ -126,8 +128,7 @@ int main (int argv, char *argc[]) {
     checkErrors();
 
     // Camera setup
-    camera->SetupTransforms(shaderUniforms[shaderIndex].viewTrans,
-          shaderUniforms[shaderIndex].projTrans);
+    camera->SetupTransforms(shaderUniforms[shaderIndex].viewTrans, shaderUniforms[shaderIndex].projTrans);
     checkErrors();
 
     glClearColor(1, 1, 1, 1);
@@ -138,18 +139,16 @@ int main (int argv, char *argc[]) {
     model->Render(shaderUniforms[shaderIndex]);
 
     // render cube 1
-    glm::mat4 world1 = glm::mat4();
-    glm::mat4 model1 = glm::rotate(world1, time, glm::vec3(0,0,1));
-    glUniformMatrix4fv(shaderUniforms[shaderIndex].modelTrans,
-                       1, GL_FALSE, glm::value_ptr(model1));
+    glm::mat4 world1 = glm::translate(glm::mat4(), glm::vec3(0.5f, 1.0f, 0.5f));
+    glm::mat4 model1 = glm::rotate(world1, time, glm::vec3(0, 0, 1));
+    glUniformMatrix4fv(shaderUniforms[shaderIndex].modelTrans, 1, GL_FALSE, glm::value_ptr(model1));
     cube1->Render(shaderUniforms[shaderIndex]);
     checkErrors();
 
     // render cube 2
-    glm::mat4 world2 = glm::translate(glm::mat4(), glm::vec3(-0.5f,-1.0f,0.5f));
-    glm::mat4 model2 = glm::rotate(world2, time, glm::vec3(0,0,1));
-    glUniformMatrix4fv(shaderUniforms[shaderIndex].modelTrans,
-                       1, GL_FALSE, glm::value_ptr(model2));
+    glm::mat4 world2 = glm::translate(glm::mat4(), glm::vec3(-0.5f, -1.0f, 0.5f));
+    glm::mat4 model2 = glm::rotate(world2, time, glm::vec3(0, 0, 1));
+    glUniformMatrix4fv(shaderUniforms[shaderIndex].modelTrans, 1, GL_FALSE, glm::value_ptr(model2));
     cube2->Render(shaderUniforms[shaderIndex]);
     checkErrors();
 

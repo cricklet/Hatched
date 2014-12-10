@@ -22,21 +22,26 @@ bool _checkErrors(const char *filename, int line) {
   while ((error = glGetError()) != GL_NO_ERROR) {
     std::string str;
 
-    switch(error) {
-    case GL_INVALID_OPERATION:
-      str="INVALID_OPERATION"; break;
-    case GL_INVALID_ENUM:
-      str="INVALID_ENUM"; break;
-    case GL_INVALID_VALUE:
-      str="INVALID_VALUE"; break;
-    case GL_OUT_OF_MEMORY:
-      str="OUT_OF_MEMORY"; break;
-    case GL_INVALID_FRAMEBUFFER_OPERATION:
-      str="INVALID_FRAMEBUFFER_OPERATION";  break;
+    switch (error) {
+      case GL_INVALID_OPERATION:
+        str = "INVALID_OPERATION";
+        break;
+      case GL_INVALID_ENUM:
+        str = "INVALID_ENUM";
+        break;
+      case GL_INVALID_VALUE:
+        str = "INVALID_VALUE";
+        break;
+      case GL_OUT_OF_MEMORY:
+        str = "OUT_OF_MEMORY";
+        break;
+      case GL_INVALID_FRAMEBUFFER_OPERATION:
+        str = "INVALID_FRAMEBUFFER_OPERATION";
+        break;
     }
 
     // std::cerr << "GL_" << str.c_str() << "\n";
-    std::cerr << "GL_" << str.c_str() << " - "<< filename << ":" << line << "\n";
+    std::cerr << "GL_" << str.c_str() << " - " << filename << ":" << line << "\n";
     result = true;
   }
 
@@ -46,7 +51,7 @@ bool _checkErrors(const char *filename, int line) {
 static int _id = 0;
 int nextTextureIndex() {
   std::cout << _id << "\n";
-  return _id ++;
+  return _id++;
 }
 
 GLuint loadTexture(const char *filename, int index) {
@@ -56,11 +61,10 @@ GLuint loadTexture(const char *filename, int index) {
   glBindTexture(GL_TEXTURE_2D, tex);
 
   int width, height;
-  unsigned char* image =
-    SOIL_load_image(filename, &width, &height, 0, SOIL_LOAD_RGB);
+  unsigned char* image = SOIL_load_image(filename, &width, &height, 0, SOIL_LOAD_RGB);
 
   glTexImage2D(GL_TEXTURE_2D, 0 /*mipmap*/, GL_RGB, width, height, 0, GL_RGB,
-	       GL_UNSIGNED_BYTE, image);
+  GL_UNSIGNED_BYTE, image);
   SOIL_free_image_data(image);
 
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -75,19 +79,19 @@ static char *getFileContents(const char *filename) {
   long fileSize;
   char *buffer; // this can get leaked if an exception is thrown before it's returned
 
-  file = fopen ( filename , "rb" );
+  file = fopen(filename, "rb");
   if (!file) {
     throw std::runtime_error(std::string("Failed to open file: ") + filename);
   }
 
   // how big is the file?
-  fseek(file , 0L , SEEK_END);
+  fseek(file, 0L, SEEK_END);
   fileSize = ftell(file);
   rewind(file);
 
   // make a buffer big enough to hold the file
   buffer = (char *) calloc(fileSize + 1, 1);
-  if(!buffer) {
+  if (!buffer) {
     throw std::runtime_error(std::string("Failed to create buffer for: ") + filename);
   }
 
@@ -101,7 +105,7 @@ static char *getFileContents(const char *filename) {
   return buffer;
 }
 
-static GLuint compileShader (const char *filename, GLenum shaderType) {
+static GLuint compileShader(const char *filename, GLenum shaderType) {
   char *fileContents;
   try {
     fileContents = getFileContents(filename);
@@ -129,8 +133,7 @@ static GLuint compileShader (const char *filename, GLenum shaderType) {
   return shader;
 }
 
-
-GLuint generateShaderProgram(const char *vertSource, const char *fragSource) {
+static GLuint generateShaderProgram(const char *vertSource, const char *fragSource) {
   // Load the shaders from the filesystem.
   GLuint vertShader = compileShader(vertSource, GL_VERTEX_SHADER);
   GLuint fragShader = compileShader(fragSource, GL_FRAGMENT_SHADER);
@@ -143,7 +146,11 @@ GLuint generateShaderProgram(const char *vertSource, const char *fragSource) {
 
   glLinkProgram(shaderProgram);
   checkErrors();
-  
+
   return shaderProgram;
+}
+
+GLuint generateShaderProgram(string vertSource, string fragSource) {
+  return generateShaderProgram(vertSource.c_str(), fragSource.c_str());
 }
 

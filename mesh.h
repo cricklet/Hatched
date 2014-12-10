@@ -24,16 +24,16 @@ struct Vertex {
 };
 
 class Mesh {
- public:
+public:
   Mesh(const vector<Vertex> vertices, vector<GLuint> indices, GLuint textureIndex);
 
   vector<Vertex> vertices;
   vector<GLuint> indices;
-  
+
   void Render(const Uniforms &uniforms);
-  
- private:
+
+private:
   GLuint vao, vbo, ebo, textureIndex;
-};  
+};
 
 #endif
