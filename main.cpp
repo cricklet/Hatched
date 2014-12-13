@@ -98,7 +98,7 @@ int main(int argv, char *argc[]) {
   GLuint gridTexture = loadTexture(gridSource, gridIndex);
   checkErrors();
 
-  string tilesSource = "tiled_test.png";
+  string tilesSource = "tiled_hatches.png";
   int tilesNum = 6;
   int tilesIndex = nextTextureIndex();
   GLuint tilesTexture = loadTexture(tilesSource, tilesIndex);
@@ -132,6 +132,8 @@ int main(int argv, char *argc[]) {
     long int currentTime = t.tv_sec * 1000 + t.tv_usec / 1000;
     float time = (float) (currentTime - startTime) / 1000.0f;
 
+    Uniforms u = shaderUniforms[shaderIndex];
+
     // Render cube
     glUseProgram(shaderPrograms[shaderIndex]);
     glEnable(GL_DEPTH_TEST);
@@ -141,12 +143,16 @@ int main(int argv, char *argc[]) {
     camera->SetupTransforms(shaderUniforms[shaderIndex].viewTrans, shaderUniforms[shaderIndex].projTrans);
     checkErrors();
 
+    // Lighting setup
+    glm::vec3 lightDir = glm::vec3(-1,-1,-1);
+    lightDir = glm::rotate(lightDir, time, glm::vec3(0,0,1));
+    if (u.lightDir != -1) glUniform3fv(u.lightDir, 1, glm::value_ptr(lightDir));
+
     glClearColor(1, 1, 1, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     checkErrors();
 
     // render model
-    Uniforms u = shaderUniforms[shaderIndex];
     if (u.useTexture != -1) glUniform1i(u.useTexture, 1);
     if (u.texture != -1) glUniform1i(u.texture, gridIndex);
     if (u.numTiles != -1) glUniform1i(u.numTiles, tilesNum);

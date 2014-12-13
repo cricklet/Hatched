@@ -169,6 +169,7 @@ void setupUniforms(Uniforms &uniforms, GLint shaderProgram) {
   uniforms.texture = glGetUniformLocation(shaderProgram, "unifTexture");
   uniforms.numTiles = glGetUniformLocation(shaderProgram, "unifNumTiles");
   uniforms.tilesTexture = glGetUniformLocation(shaderProgram, "unifTilesTexture");
+  uniforms.lightDir = glGetUniformLocation(shaderProgram, "unifLightDir");
 
   cout << "Loaded uniforms for: " << shaderProgram << "\n";
   cout << "  modelTrans: " << uniforms.modelTrans << "\n";
@@ -179,5 +180,6 @@ void setupUniforms(Uniforms &uniforms, GLint shaderProgram) {
   cout << "  texture: " << uniforms.texture << "\n";
   cout << "  num tiles: " << uniforms.numTiles << "\n";
   cout << "  tiles texture: " << uniforms.tilesTexture << "\n";
+  cout << "  light dir: " << uniforms.lightDir << "\n";
 }
 

@@ -19,6 +19,7 @@ struct Uniforms {
   GLint texture;
   GLint numTiles;
   GLint tilesTexture;
+  GLint lightDir;
 };
 
 float random(float max);
