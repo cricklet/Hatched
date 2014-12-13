@@ -16,7 +16,7 @@ void main() {
   light = min(1, max(0, light));
   
   if (unifUseTexture) {
-  	outFragColor = light * texture(unifTexture, outVertUV); 
+  	outFragColor = light * texture(unifTexture, outVertUV);
   } else {
   	outFragColor = light * vec4(unifColor, 1.0);
   }

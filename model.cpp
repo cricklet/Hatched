@@ -104,6 +104,7 @@ void Model::Render(const Uniforms &uniforms) {
   glm::mat4 world = glm::translate(glm::mat4(), glm::vec3(0,0,-0.5));
 
   glm::mat4 model = glm::mat4();
+  model = glm::rotate(model, (float) (M_PI / 2.0), glm::vec3(0, 0, 1));
   model = glm::rotate(model, (float) (M_PI / 2.0), glm::vec3(1, 0, 0));
   float scale = 1.0f / maxDimension(this->bounds);
   model = glm::scale(model, glm::vec3(scale, scale, scale));

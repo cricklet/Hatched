@@ -35,7 +35,7 @@ int main(int argv, char *argc[]) {
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
 
-  SDL_Window *window = SDL_CreateWindow("OpenGL", 100, 100, 640, 480, SDL_WINDOW_OPENGL);
+  SDL_Window *window = SDL_CreateWindow("OpenGL", 100, 100, 800, 600, SDL_WINDOW_OPENGL);
   SDL_GLContext context = SDL_GL_CreateContext(window);
 
   glewExperimental = GL_TRUE; // necessary for modern opengl calls
@@ -44,8 +44,6 @@ int main(int argv, char *argc[]) {
 
   Camera *camera = new Camera();
 
-  Cube *cube1 = new Cube("kitten.png");
-  Cube *cube2 = new Cube("puppy.png");
   Model *model = new Model("nanosuit/nanosuit2.obj");
   checkErrors();
 
@@ -75,8 +73,6 @@ int main(int argv, char *argc[]) {
 
     setupUniforms(shaderUniforms[i], shaderProgram);
 
-    cube1->BindToShader(shaderProgram);
-    cube2->BindToShader(shaderProgram);
     model->BindToShader(shaderProgram);
 
     shaderPrograms[i] = shaderProgram;
@@ -125,6 +121,7 @@ int main(int argv, char *argc[]) {
 
     // Render cube
     glUseProgram(shaderPrograms[shaderIndex]);
+    glEnable(GL_DEPTH_TEST);
     checkErrors();
 
     // Camera setup
@@ -137,20 +134,6 @@ int main(int argv, char *argc[]) {
 
     // render model
     model->Render(shaderUniforms[shaderIndex]);
-
-    // render cube 1
-    glm::mat4 world1 = glm::translate(glm::mat4(), glm::vec3(0.5f, 1.0f, 0.5f));
-    glm::mat4 model1 = glm::rotate(glm::mat4(), time, glm::vec3(0, 0, 1));
-    glUniformMatrix4fv(shaderUniforms[shaderIndex].modelTrans, 1, GL_FALSE, glm::value_ptr(world1 * model1));
-    cube1->Render(shaderUniforms[shaderIndex]);
-    checkErrors();
-
-    // render cube 2
-    glm::mat4 world2 = glm::translate(glm::mat4(), glm::vec3(-0.5f, -1.0f, 0.5f));
-    glm::mat4 model2 = glm::rotate(glm::mat4(), time, glm::vec3(0, 0, 1));
-    glUniformMatrix4fv(shaderUniforms[shaderIndex].modelTrans, 1, GL_FALSE, glm::value_ptr(world2 * model2));
-    cube2->Render(shaderUniforms[shaderIndex]);
-    checkErrors();
 
     SDL_GL_SwapWindow(window);
     checkErrors();

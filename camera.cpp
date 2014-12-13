@@ -3,7 +3,7 @@
 #include <iostream>
 
 Camera::Camera() {
-  this->location = glm::vec3(3,0,2);
+  this->location = glm::vec3(1.2,0,0);
   this->origin = glm::vec3(0,0,0);
   this->up = glm::vec3(0,0,1);
 
