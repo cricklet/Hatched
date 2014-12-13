@@ -167,6 +167,8 @@ void setupUniforms(Uniforms &uniforms, GLint shaderProgram) {
   uniforms.useTexture = glGetUniformLocation(shaderProgram, "unifUseTexture");
   uniforms.color = glGetUniformLocation(shaderProgram, "unifColor");
   uniforms.texture = glGetUniformLocation(shaderProgram, "unifTexture");
+  uniforms.numTiles = glGetUniformLocation(shaderProgram, "unifNumTiles");
+  uniforms.tilesTexture = glGetUniformLocation(shaderProgram, "unifTilesTexture");
 
   cout << "Loaded uniforms for: " << shaderProgram << "\n";
   cout << "  modelTrans: " << uniforms.modelTrans << "\n";
@@ -175,5 +177,7 @@ void setupUniforms(Uniforms &uniforms, GLint shaderProgram) {
   cout << "  useTexture: " << uniforms.useTexture << "\n";
   cout << "  color: " << uniforms.color << "\n";
   cout << "  texture: " << uniforms.texture << "\n";
+  cout << "  num tiles: " << uniforms.numTiles << "\n";
+  cout << "  tiles texture: " << uniforms.tilesTexture << "\n";
 }
 

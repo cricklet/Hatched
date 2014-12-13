@@ -50,16 +50,19 @@ int main(int argv, char *argc[]) {
   vector<string> fragSources;
 
   vertSources.push_back("simple.vert");
-  vertSources.push_back("dir_light.vert");
-
   fragSources.push_back("simple.frag");
+
+  vertSources.push_back("dir_light.vert");
   fragSources.push_back("dir_light.frag");
 
-  GLuint shaderPrograms[2];
+  vertSources.push_back("dir_light.vert");
+  fragSources.push_back("hatched.frag");
 
-  Uniforms shaderUniforms[2];
+  GLuint shaderPrograms[3];
 
-  int numShaders = 2;
+  Uniforms shaderUniforms[3];
+
+  int numShaders = 3;
   int shaderIndex = 0;
 
   for (int i = 0; i < numShaders; i++) {
@@ -90,19 +93,16 @@ int main(int argv, char *argc[]) {
       10.0f  //far
   );
 
-  vector<string> hatchSources = {
-      "hatch_0.jpg", "hatch_1.jpg", "hatch_2.jpg",
-      "hatch_3.jpg", "hatch_4.jpg", "hatch_5.jpg"
-  };
+  string gridSource = "grid.png";
+  int gridIndex = nextTextureIndex();
+  GLuint gridTexture = loadTexture(gridSource, gridIndex);
+  checkErrors();
 
-  vector <int> hatchIndices;
-  vector <GLuint> hatchTextures;
-  for (string hatchSource : hatchSources) {
-    int hatchIndex = nextTextureIndex();
-    GLuint hatchTexture = loadTexture(hatchSource, hatchIndex);
-    hatchIndices.push_back(hatchIndex);
-    hatchTextures.push_back(hatchTexture);
-  }
+  string tilesSource = "tiled_test.png";
+  int tilesNum = 6;
+  int tilesIndex = nextTextureIndex();
+  GLuint tilesTexture = loadTexture(tilesSource, tilesIndex);
+  checkErrors();
 
   struct timeval t;
   gettimeofday(&t, NULL);
@@ -146,7 +146,13 @@ int main(int argv, char *argc[]) {
     checkErrors();
 
     // render model
-    glUniform1i(shaderUniforms[shaderIndex].useTexture, 0);
+    Uniforms u = shaderUniforms[shaderIndex];
+    if (u.useTexture != -1) glUniform1i(u.useTexture, 1);
+    if (u.texture != -1) glUniform1i(u.texture, gridIndex);
+    if (u.numTiles != -1) glUniform1i(u.numTiles, tilesNum);
+    if (u.tilesTexture != -1) glUniform1i(u.tilesTexture, tilesIndex);
+    checkErrors();
+
     model->Render(shaderUniforms[shaderIndex]);
 
     SDL_GL_SwapWindow(window);

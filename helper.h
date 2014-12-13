@@ -17,6 +17,8 @@ struct Uniforms {
   GLint useTexture;
   GLint color;
   GLint texture;
+  GLint numTiles;
+  GLint tilesTexture;
 };
 
 float random(float max);
