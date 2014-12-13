@@ -56,7 +56,6 @@ void Mesh::BindToShader(GLuint shaderProgram) {
 
 void Mesh::Render(const Uniforms &uniforms) {
   // load the first texture
-  glUniform1i(uniforms.useTexture, 0);
   glUniform3fv(uniforms.color, 1, glm::value_ptr(this->color));
   checkErrors();
 

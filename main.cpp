@@ -20,7 +20,6 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "helper.h"
-#include "cube.h"
 #include "camera.h"
 #include "mesh.h"
 #include "model.h"
@@ -91,6 +90,20 @@ int main(int argv, char *argc[]) {
       10.0f  //far
   );
 
+  vector<string> hatchSources = {
+      "hatch_0.jpg", "hatch_1.jpg", "hatch_2.jpg",
+      "hatch_3.jpg", "hatch_4.jpg", "hatch_5.jpg"
+  };
+
+  vector <int> hatchIndices;
+  vector <GLuint> hatchTextures;
+  for (string hatchSource : hatchSources) {
+    int hatchIndex = nextTextureIndex();
+    GLuint hatchTexture = loadTexture(hatchSource, hatchIndex);
+    hatchIndices.push_back(hatchIndex);
+    hatchTextures.push_back(hatchTexture);
+  }
+
   struct timeval t;
   gettimeofday(&t, NULL);
   long int startTime = t.tv_sec * 1000 + t.tv_usec / 1000;
@@ -133,6 +146,7 @@ int main(int argv, char *argc[]) {
     checkErrors();
 
     // render model
+    glUniform1i(shaderUniforms[shaderIndex].useTexture, 0);
     model->Render(shaderUniforms[shaderIndex]);
 
     SDL_GL_SwapWindow(window);

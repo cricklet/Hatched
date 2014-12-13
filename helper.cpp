@@ -56,7 +56,7 @@ int nextTextureIndex() {
   return _id++;
 }
 
-GLuint loadTexture(const char *filename, int index) {
+static GLuint loadTexture(const char *filename, int index) {
   GLuint tex;
   glGenTextures(1, &tex);
   glActiveTexture(index + GL_TEXTURE0);
@@ -74,6 +74,10 @@ GLuint loadTexture(const char *filename, int index) {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glGenerateMipmap(GL_TEXTURE_2D);
+}
+
+GLuint loadTexture(string filename, int index) {
+  return loadTexture(filename.c_str(), index);
 }
 
 static char *getFileContents(const char *filename) {
