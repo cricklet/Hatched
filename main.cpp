@@ -224,10 +224,10 @@ int main(int argv, char *argc[]) {
   glewInit();
   checkErrors();
 
-  Camera *camera = new Camera();
+  auto *camera = new FPSCamera();
 
-  //Model *model = loadNanosuit();
-  Model *model = loadHouse();
+  Model *model = loadNanosuit();
+  //Model *model = loadHouse();
 
   glm::mat4 viewTrans = glm::lookAt(
       glm::vec3(3.0f, 0.0f, 1.0f), // location of camera
@@ -266,11 +266,17 @@ int main(int argv, char *argc[]) {
   struct timeval t;
   gettimeofday(&t, NULL);
   long int startTime = t.tv_sec * 1000 + t.tv_usec / 1000;
+  long int lastTime = startTime;
 
   bool quit = false;
 
   SDL_Event windowEvent;
   while (quit == false) {
+    gettimeofday(&t, NULL);
+    long int currentTime = t.tv_sec * 1000 + t.tv_usec / 1000;
+    float time = (float) (currentTime - startTime) / 1000.0f;
+    float dt = (float) (currentTime - lastTime) / 1000.0f;
+
     while (SDL_PollEvent(&windowEvent)) {
       if (windowEvent.type == SDL_QUIT) {
         quit = true;
@@ -280,7 +286,7 @@ int main(int argv, char *argc[]) {
           case SDLK_ESCAPE:
             quit = true;
             break;
-          case SDLK_s:
+          case SDLK_r:
             rendererIndex++;
             rendererIndex %= renderers.size();
             break;
@@ -289,14 +295,14 @@ int main(int argv, char *argc[]) {
       camera->HandleEvent(windowEvent);
     }
 
-    gettimeofday(&t, NULL);
-    long int currentTime = t.tv_sec * 1000 + t.tv_usec / 1000;
-    float time = (float) (currentTime - startTime) / 1000.0f;
+    camera->Think(dt);
 
     renderers[rendererIndex](time);
 
     SDL_GL_SwapWindow(window);
     checkErrors();
+
+    lastTime = currentTime;
   }
 
   SDL_GL_DeleteContext(context);
