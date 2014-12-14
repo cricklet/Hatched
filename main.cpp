@@ -144,11 +144,14 @@ static Renderer generateSSAORenderer(
     function<void(GLuint)> bindShader,
     function<void(Uniforms)> renderScene
     ) {
-  GLuint renderShader = loadShader("simple.vert", "simple.frag");
+  GLuint renderShader = loadShader("normals.vert", "normals.frag");
   Uniforms renderUniforms = getUniforms(renderShader);
   GLuint frameShader = loadShader("render_buffer.vert", "render_buffer.frag");
   Uniforms frameUniforms = getUniforms(frameShader);
   checkErrors();
+
+  int noiseIndex = nextTextureIndex();
+  GLuint noiseTexture = loadTexture("noise.png", noiseIndex);
 
   FBO *fbo = new FBO(WIDTH, HEIGHT);
   fbo->BindToShader(frameShader);
@@ -184,7 +187,7 @@ static Model *loadNanosuit() {
   Model *model = new Model("models/nanosuit/nanosuit2.obj");
   glm::mat4 modelTrans = glm::mat4();
 
-  modelTrans = glm::translate(modelTrans, glm::vec3(0,0,-0.5));
+  modelTrans = glm::translate(modelTrans, glm::vec3(0, 0, -0.5));
   modelTrans = glm::rotate(modelTrans, (float) (M_PI / 2.0), glm::vec3(0, 0, 1));
   modelTrans = glm::rotate(modelTrans, (float) (M_PI / 2.0), glm::vec3(1, 0, 0));
   float scale = 1.0f / model->GetSize();
@@ -224,7 +227,8 @@ int main(int argv, char *argc[]) {
   glewInit();
   checkErrors();
 
-  auto *camera = new FPSCamera();
+  Camera *camera = new FPSCamera();
+//  Camera *camera = new RotationCamera();
 
   Model *model = loadNanosuit();
   //Model *model = loadHouse();

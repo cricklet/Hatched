@@ -145,6 +145,16 @@ void FPSCamera::Think(float dt) {
       this->location + forward, // look at
       glm::vec3(0,0,1)  // camera up vector
   );
+
+  cout << "Location: "
+      << floorf(location.x * 10) / 10 << ", "
+      << floorf(location.z * 10) / 10 << ", "
+      << floorf(location.y * 10) / 10 << "\n";
+
+  cout << "Forward: "
+      << floorf(forward.x * 10) / 10 << ", "
+      << floorf(forward.z * 10) / 10 << ", "
+      << floorf(forward.y * 10) / 10 << "\n";
 }
 
 
