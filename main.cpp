@@ -27,25 +27,6 @@
 
 using namespace std;
 
-static bool shouldQuit(SDL_Event &event) {
-  if (event.type == SDL_QUIT)
-    return true;
-
-  if (event.type == SDL_KEYDOWN)
-    if (event.key.keysym.sym == SDLK_ESCAPE)
-      return true;
-
-  return false;
-}
-
-static bool shouldSwitchRenderer(SDL_Event &event) {
-  if (event.type == SDL_KEYDOWN)
-    if (event.key.keysym.sym == SDLK_s)
-      return true;
-
-  return false;
-}
-
 static GLuint loadShader(string vertSource, string fragSource) {
   GLuint shaderProgram = generateShaderProgram(vertSource, fragSource);
   checkErrors();
@@ -209,12 +190,18 @@ int main(int argv, char *argc[]) {
   SDL_Event windowEvent;
   while (quit == false) {
     while (SDL_PollEvent(&windowEvent)) {
-      if (shouldQuit(windowEvent)) quit = true;
-      if (shouldSwitchRenderer(windowEvent)) {
-        rendererIndex ++;
-        rendererIndex %= renderers.size();
+      if (windowEvent.type == SDL_QUIT) { quit = true; }
+      if (windowEvent.type == SDL_KEYDOWN) {
+        switch (windowEvent.key.keysym.sym) {
+          case SDLK_ESCAPE:
+            quit = true;
+            break;
+          case SDLK_s:
+            rendererIndex ++;
+            rendererIndex %= renderers.size();
+            break;
+        }
       }
-
       camera->HandleEvent(windowEvent);
     }
 
