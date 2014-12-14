@@ -27,6 +27,47 @@
 
 using namespace std;
 
+static GLuint loadShader(string vertSource, string fragSource) {
+  GLuint shaderProgram = generateShaderProgram(vertSource, fragSource);
+  checkErrors();
+
+  glBindFragDataLocation(shaderProgram, 0, "outFragColor");
+  checkErrors();
+
+  return shaderProgram;
+}
+
+struct Renderer {
+  function<void (void)> preRender;
+  function<void (void)> postRender;
+};
+
+static Renderer generateSimpleRenderer(
+    function<void (GLuint)> bindShaderProgram
+) {
+  GLuint shader = loadShader("simple.vert", "simple.frag");
+  Uniforms uniforms = getUniforms(shader);
+
+  bindShaderProgram(shader);
+
+  Renderer renderer;
+  renderer.preRender = [&] () {
+    glUseProgram(shader);
+
+    glClearColor(1, 1, 1, 1);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    checkErrors();
+
+    glEnable(GL_DEPTH_TEST);
+    checkErrors();
+  };
+  renderer.postRender = [&] () {
+    checkErrors();
+  };
+
+  return renderer;
+}
+
 static function<void (void)> generateFunc() {
   return [] () { cout << "blah\n"; };
 }
@@ -87,7 +128,7 @@ int main(int argv, char *argc[]) {
     glUseProgram(shaderProgram);
     checkErrors();
 
-    setupUniforms(shaderUniforms[i], shaderProgram);
+    shaderUniforms[i] = getUniforms(shaderProgram);
 
     model->BindToShader(shaderProgram);
 
@@ -146,31 +187,8 @@ int main(int argv, char *argc[]) {
     long int currentTime = t.tv_sec * 1000 + t.tv_usec / 1000;
     float time = (float) (currentTime - startTime) / 1000.0f;
 
-    Uniforms u = shaderUniforms[shaderIndex];
-
-    // Render cube
-    glUseProgram(shaderPrograms[shaderIndex]);
-    glEnable(GL_DEPTH_TEST);
-    checkErrors();
-
     // Camera setup
     camera->SetupTransforms(shaderUniforms[shaderIndex].viewTrans, shaderUniforms[shaderIndex].projTrans);
-    checkErrors();
-
-    // Lighting setup
-    glm::vec3 lightDir = glm::vec3(-1,-1,-1);
-    lightDir = glm::rotate(lightDir, time, glm::vec3(0,0,1));
-    if (u.lightDir != -1) glUniform3fv(u.lightDir, 1, glm::value_ptr(lightDir));
-
-    glClearColor(1, 1, 1, 1);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-    checkErrors();
-
-    // render model
-    if (u.useTexture != -1) glUniform1i(u.useTexture, 1);
-    if (u.texture != -1) glUniform1i(u.texture, gridIndex);
-    if (u.numTiles != -1) glUniform1i(u.numTiles, tilesNum);
-    if (u.tilesTexture != -1) glUniform1i(u.tilesTexture, tilesIndex);
     checkErrors();
 
     model->Render(u);

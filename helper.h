@@ -34,5 +34,5 @@ GLuint loadTexture(string filename, int index);
 
 int nextTextureIndex();
 
-void setupUniforms(Uniforms &uniforms, GLint shaderProgram);
+Uniforms getUniforms(GLint shaderProgram);
 #endif

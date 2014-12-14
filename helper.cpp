@@ -160,7 +160,10 @@ GLuint generateShaderProgram(string vertSource, string fragSource) {
   return generateShaderProgram(vertSource.c_str(), fragSource.c_str());
 }
 
-void setupUniforms(Uniforms &uniforms, GLint shaderProgram) {
+Uniforms getUniforms(GLint shaderProgram) {
+  Uniforms uniforms;
+  glUseProgram(shaderProgram);
+
   uniforms.modelTrans = glGetUniformLocation(shaderProgram, "unifModelTrans");
   uniforms.viewTrans = glGetUniformLocation(shaderProgram, "unifViewTrans");
   uniforms.projTrans = glGetUniformLocation(shaderProgram, "unifProjTrans");
@@ -183,5 +186,7 @@ void setupUniforms(Uniforms &uniforms, GLint shaderProgram) {
   cout << "  tiles texture: " << uniforms.tilesTexture << "\n";
   cout << "  light dir: " << uniforms.lightDir << "\n";
   cout << "  buffer: " << uniforms.buffer << "\n";
+
+  return uniforms;
 }
 

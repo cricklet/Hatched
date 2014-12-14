@@ -24,6 +24,7 @@ Mesh::Mesh(const vector<Vertex> vertices, vector<GLuint> indices) {
 }
 
 void Mesh::BindToShader(GLuint shaderProgram) {
+  glUseProgram(shaderProgram);
   glBindVertexArray(this->vao);
   glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
 
