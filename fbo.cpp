@@ -1,13 +1,13 @@
 #include "fbo.h"
 
 static GLfloat vertices[] = {
-    -1, -1,  0, 0,
-    -1, 1,   0, 1,
-    1, 1,    1, 1,
+    -1, -1, 0, 0,
+    -1, 1, 0, 1,
+    1, 1, 1, 1,
 
-    1, 1,    1, 1,
-    1, -1,   1, 0,
-    -1, -1,  0, 0,
+    1, 1, 1, 1,
+    1, -1, 1, 0,
+    -1, -1, 0, 0,
 };
 
 static GLuint vertexStride = sizeof(GLfloat) * 4;
@@ -25,7 +25,7 @@ static GLuint generateVBO() {
   return vbo;
 }
 
-static GLuint generateFBO(int width, int height) {
+static GLuint generateFBO(int index, int width, int height) {
   GLuint fbo;
   glGenFramebuffers(1, &fbo);
   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
@@ -33,7 +33,7 @@ static GLuint generateFBO(int width, int height) {
 
   // Create a texture for use by this framebuffer
   GLuint fboTexture;
-  glActiveTexture(GL_TEXTURE0 + nextTextureIndex());
+  glActiveTexture(GL_TEXTURE0 + index);
   glGenTextures(1, &fboTexture);
   glBindTexture(GL_TEXTURE_2D, fboTexture);
   checkErrors();
@@ -51,9 +51,9 @@ static GLuint generateFBO(int width, int height) {
   GLuint fboRenderBuffer;
   glGenRenderbuffers(1, &fboRenderBuffer);
   glBindRenderbuffer(GL_RENDERBUFFER, fboRenderBuffer);
-  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 800, 600);
+  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
   glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
-      GL_RENDERBUFFER, fboRenderBuffer);
+  GL_RENDERBUFFER, fboRenderBuffer);
   checkErrors();
 
   if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
@@ -70,7 +70,8 @@ FBO::FBO(int width, int height) {
   glGenVertexArrays(1, &this->vao);
   glBindVertexArray(this->vao);
 
-  this->fbo = generateFBO(width, height);
+  this->textureIndex = nextTextureIndex();
+  this->fbo = generateFBO(this->textureIndex, width, height);
   this->vbo = generateVBO();
 }
 
@@ -79,22 +80,22 @@ void FBO::BindToShader(GLuint shaderProgram) {
   glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
 
   GLint posAttrib = glGetAttribLocation(shaderProgram, "inVertPosition");
-  if (posAttrib != -1) {
-    glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, vertexStride, positionOffset);
-    glEnableVertexAttribArray(posAttrib);
-    checkErrors();
-  }
+  glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, vertexStride, positionOffset);
+  glEnableVertexAttribArray(posAttrib);
+  checkErrors();
 
   GLint coordAttrib = glGetAttribLocation(shaderProgram, "inVertBufferCoord");
-  if (coordAttrib != -1) {
-    glVertexAttribPointer(coordAttrib, 2, GL_FLOAT, GL_FALSE, vertexStride, coordOffset);
-    glEnableVertexAttribArray(coordAttrib);
-    checkErrors();
-  }
+  glVertexAttribPointer(coordAttrib, 2, GL_FLOAT, GL_FALSE, vertexStride, coordOffset);
+  glEnableVertexAttribArray(coordAttrib);
+  checkErrors();
 }
 
 GLuint FBO::GetFrameBuffer() {
   return this->fbo;
+}
+
+int FBO::GetTextureIndex() {
+  return this->textureIndex;
 }
 
 void FBO::Render() {

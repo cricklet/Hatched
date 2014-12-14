@@ -3,6 +3,8 @@
 
 Mesh::Mesh(const vector<Vertex> vertices, vector<GLuint> indices) {
   this->vertices = vertices;
+  cout << "Created mesh with # " << vertices.size() << " vertices.\n";
+
   this->indices = indices;
 
   this->color = glm::vec3(random(1), random(1), random(1));

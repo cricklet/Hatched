@@ -15,8 +15,10 @@ class FBO {
   FBO(int width, int height);
   void BindToShader(GLuint shaderProgram);
   GLuint GetFrameBuffer();
+  int GetTextureIndex();
   void Render();
 
  private:
   GLuint fbo, vbo, vao;
+  int textureIndex;
 };

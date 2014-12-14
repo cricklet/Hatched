@@ -141,42 +141,29 @@ static Renderer generateHatchRenderer(
 }
 
 static Renderer generateSSAORenderer(
-    auto bindShader,
-    auto renderScene
+    function<void(GLuint)> bindShader,
+    function<void(Uniforms)> renderScene
     ) {
-  GLuint renderShader = loadShader("dir_light.vert", "hatched.frag");
+  GLuint renderShader = loadShader("simple.vert", "simple.frag");
   Uniforms renderUniforms = getUniforms(renderShader);
-
-  GLuint frameShader = loadShader("dir_light.vert", "hatched.frag");
+  GLuint frameShader = loadShader("render_buffer.vert", "render_buffer.frag");
   Uniforms frameUniforms = getUniforms(frameShader);
+  checkErrors();
 
   FBO *fbo = new FBO(WIDTH, HEIGHT);
   fbo->BindToShader(frameShader);
-
-  string tilesSource = "tiled_hatches.png";
-  int tilesNum = 6;
-  int tilesIndex = nextTextureIndex();
-  GLuint tilesTexture = loadTexture(tilesSource, tilesIndex);
   checkErrors();
 
   bindShader(renderShader);
-  bindShader(frameShader);
+  checkErrors();
 
   return [=] (float time) {
     // draw to the frame buffer
     glUseProgram(renderShader);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo->GetFrameBuffer());
+
     clearActiveBuffer();
     checkErrors();
-
-    // setup lighting
-    glm::vec3 lightDir = glm::vec3(-1,-1,-1);
-    lightDir = glm::rotate(lightDir, time, glm::vec3(0,0,1));
-    glUniform3fv(renderUniforms.lightDir, 1, glm::value_ptr(lightDir));
-
-    // render hatched tiles texture
-    glUniform1i(renderUniforms.numTiles, tilesNum);
-    glUniform1i(renderUniforms.tilesTexture, tilesIndex);
 
     // render scene (includes setting up camera)
     renderScene(renderUniforms);
@@ -186,8 +173,40 @@ static Renderer generateSSAORenderer(
     glUseProgram(frameShader);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     clearActiveBuffer();
+
+    glUniform1i(frameUniforms.buffer, fbo->GetTextureIndex());
+
     fbo->Render();
   };
+}
+
+static Model *loadNanosuit() {
+  Model *model = new Model("models/nanosuit/nanosuit2.obj");
+  glm::mat4 modelTrans = glm::mat4();
+
+  modelTrans = glm::translate(modelTrans, glm::vec3(0,0,-0.5));
+  modelTrans = glm::rotate(modelTrans, (float) (M_PI / 2.0), glm::vec3(0, 0, 1));
+  modelTrans = glm::rotate(modelTrans, (float) (M_PI / 2.0), glm::vec3(1, 0, 0));
+  float scale = 1.0f / model->GetSize();
+  modelTrans = glm::scale(modelTrans, glm::vec3(scale, scale, scale));
+
+  model->SetTransform(modelTrans);
+
+  return model;
+}
+
+static Model *loadHouse() {
+  Model *model = new Model("models/house/House01.obj");
+  glm::mat4 modelTrans = glm::mat4();
+
+  modelTrans = glm::rotate(modelTrans, (float) (M_PI / 2.0), glm::vec3(0, 0, 1));
+  modelTrans = glm::rotate(modelTrans, (float) (M_PI / 2.0), glm::vec3(1, 0, 0));
+  float scale = 1.0f / 10;
+  modelTrans = glm::scale(modelTrans, glm::vec3(scale, scale, scale));
+
+  model->SetTransform(modelTrans);
+
+  return model;
 }
 
 int main(int argv, char *argc[]) {
@@ -207,8 +226,8 @@ int main(int argv, char *argc[]) {
 
   Camera *camera = new Camera();
 
-  Model *model = new Model("nanosuit/nanosuit2.obj");
-  checkErrors();
+  //Model *model = loadNanosuit();
+  Model *model = loadHouse();
 
   glm::mat4 viewTrans = glm::lookAt(
       glm::vec3(3.0f, 0.0f, 1.0f), // location of camera
@@ -218,7 +237,7 @@ int main(int argv, char *argc[]) {
 
   glm::mat4 projTrans = glm::perspective(
       45.0f, // fov y
-      800.0f / 600.0f, // aspect
+      (float) WIDTH / HEIGHT, // aspect
       0.2f,  // near
       10.0f  //far
       );
@@ -239,6 +258,7 @@ int main(int argv, char *argc[]) {
       generateSimpleRenderer(bindShader, renderScene),
       generateDirLightRenderer(bindShader, renderScene),
       generateHatchRenderer(bindShader, renderScene),
+      generateSSAORenderer(bindShader, renderScene),
   };
 
   int rendererIndex = 0;

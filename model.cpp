@@ -57,12 +57,18 @@ static Bounds computeBounds(vector<Mesh> meshes) {
   Bounds overall = meshes[0].GetBounds();
   for (Mesh mesh : meshes) {
     Bounds local = mesh.GetBounds();
-    if (local.minx < overall.minx) overall.minx = local.minx;
-    if (local.maxx > overall.maxx) overall.maxx = local.maxx;
-    if (local.miny < overall.miny) overall.miny = local.miny;
-    if (local.maxy > overall.maxy) overall.maxy = local.maxy;
-    if (local.minz < overall.minz) overall.minz = local.minz;
-    if (local.maxz > overall.maxz) overall.maxz = local.maxz;
+    if (local.minx < overall.minx)
+      overall.minx = local.minx;
+    if (local.maxx > overall.maxx)
+      overall.maxx = local.maxx;
+    if (local.miny < overall.miny)
+      overall.miny = local.miny;
+    if (local.maxy > overall.maxy)
+      overall.maxy = local.maxy;
+    if (local.minz < overall.minz)
+      overall.minz = local.minz;
+    if (local.maxz > overall.maxz)
+      overall.maxz = local.maxz;
   }
 
   return overall;
@@ -72,7 +78,7 @@ static float maxDimension(Bounds b) {
   return max(max(b.maxx - b.minx, b.maxy - b.miny), b.maxz - b.minz);
 }
 
-Model::Model(string path) {
+Model::Model(string path, glm::mat4 transform) {
   Assimp::Importer importer;
   unsigned int flags = aiProcess_GenNormals | aiProcess_Triangulate | aiProcess_FlipUVs;
 
@@ -98,23 +104,25 @@ Model::Model(string path) {
       << this->bounds.maxx << ", "
       << this->bounds.maxy << ", "
       << this->bounds.maxz << "\n";
+
+  this->transform = transform;
 }
 
 void Model::Render(const Uniforms &uniforms) {
-  glm::mat4 world = glm::translate(glm::mat4(), glm::vec3(0,0,-0.5));
-
-  glm::mat4 model = glm::mat4();
-  model = glm::rotate(model, (float) (M_PI / 2.0), glm::vec3(0, 0, 1));
-  model = glm::rotate(model, (float) (M_PI / 2.0), glm::vec3(1, 0, 0));
-  float scale = 1.0f / maxDimension(this->bounds);
-  model = glm::scale(model, glm::vec3(scale, scale, scale));
-
-  glUniformMatrix4fv(uniforms.modelTrans, 1, GL_FALSE, glm::value_ptr(world * model));
+  glUniformMatrix4fv(uniforms.modelTrans, 1, GL_FALSE, glm::value_ptr(this->transform));
 
   for (Mesh m : this->meshes) {
     m.Render(uniforms);
     checkErrors();
   }
+}
+
+float Model::GetSize() {
+  return maxDimension(this->bounds);
+}
+
+void Model::SetTransform(glm::mat4 transform) {
+  this->transform = transform;
 }
 
 void Model::BindToShader(GLuint shaderProgram) {

@@ -24,11 +24,14 @@ using namespace std;
 
 class Model {
  public:
-  Model(string path);
+  Model(string path, glm::mat4 transform = glm::mat4());
   void Render(const Uniforms &uniforms);
   void BindToShader(GLuint shaderProgram);
+  float GetSize();
+  void SetTransform(glm::mat4 transform);
 
  private:
   vector<Mesh> meshes;
   Bounds bounds;
+  glm::mat4 transform;
 };

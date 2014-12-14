@@ -19,9 +19,10 @@ void main() {
 	float exact = (1 - outVertLighting) * unifNumTiles;
 	int index = int(exact);
 	float weight = exact - index;
+	//weight = pow(weight, 4);
 	
-	tileWeights[index] = weight;
-	tileWeights[index + 1] = 1 - weight;
+	tileWeights[index] = 1 - weight;
+	tileWeights[index + 1] = weight;
 	
 	outFragColor = vec4(0,0,0,1);
 	for (int i = 0; i < unifNumTiles; i ++) {
