@@ -2,6 +2,7 @@
 #include <vector>
 #include <fstream>
 #include <streambuf>
+#include <functional>
 
 #include <iostream>
 #include <stdexcept>
@@ -26,6 +27,15 @@
 
 using namespace std;
 
+static function<void (void)> generateFunc() {
+  return [] () { cout << "blah\n"; };
+}
+
+static void testFunc() {
+  function<void (void)> blah = generateFunc();
+  blah();
+}
+
 int main(int argv, char *argc[]) {
   SDL_Init(SDL_INIT_VIDEO);
   SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
@@ -40,6 +50,8 @@ int main(int argv, char *argc[]) {
   glewExperimental = GL_TRUE; // necessary for modern opengl calls
   glewInit();
   checkErrors();
+
+  testFunc();
 
   Camera *camera = new Camera();
 
@@ -58,8 +70,10 @@ int main(int argv, char *argc[]) {
   vertSources.push_back("dir_light.vert");
   fragSources.push_back("hatched.frag");
 
-  GLuint shaderPrograms[3];
+  vertSources.push_back("render_buffer.vert");
+  fragSources.push_back("render_buffer.frag");
 
+  GLuint shaderPrograms[3];
   Uniforms shaderUniforms[3];
 
   int numShaders = 3;
@@ -159,7 +173,7 @@ int main(int argv, char *argc[]) {
     if (u.tilesTexture != -1) glUniform1i(u.tilesTexture, tilesIndex);
     checkErrors();
 
-    model->Render(shaderUniforms[shaderIndex]);
+    model->Render(u);
 
     SDL_GL_SwapWindow(window);
     checkErrors();

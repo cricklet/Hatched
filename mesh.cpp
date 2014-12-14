@@ -14,12 +14,10 @@ Mesh::Mesh(const vector<Vertex> vertices, vector<GLuint> indices) {
   glBindVertexArray(this->vao);
   glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
 
-  glBufferData(GL_ARRAY_BUFFER, this->vertices.size() * sizeof(Vertex),
-         &this->vertices[0], GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, this->vertices.size() * sizeof(Vertex), &this->vertices[0], GL_STATIC_DRAW);
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->ebo);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, this->indices.size() * sizeof(GLuint),
-         &this->indices[0], GL_STATIC_DRAW);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, this->indices.size() * sizeof(GLuint), &this->indices[0], GL_STATIC_DRAW);
 
   glBindVertexArray(0);
   checkErrors();
@@ -73,13 +71,19 @@ Bounds Mesh::GetBounds() {
   for (Vertex v : this->vertices) {
     glm::vec3 p = v.position;
 
-    if (p.x < b.minx) b.minx = p.x;
-    if (p.y < b.miny) b.miny = p.y;
-    if (p.z < b.minz) b.minz = p.z;
+    if (p.x < b.minx)
+      b.minx = p.x;
+    if (p.y < b.miny)
+      b.miny = p.y;
+    if (p.z < b.minz)
+      b.minz = p.z;
 
-    if (p.x > b.minx) b.maxx = p.x;
-    if (p.y > b.miny) b.maxy = p.y;
-    if (p.z > b.minz) b.maxz = p.z;
+    if (p.x > b.minx)
+      b.maxx = p.x;
+    if (p.y > b.miny)
+      b.maxy = p.y;
+    if (p.z > b.minz)
+      b.maxz = p.z;
   }
 
   return b;
