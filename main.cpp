@@ -24,8 +24,18 @@
 #include "camera.h"
 #include "mesh.h"
 #include "model.h"
+#include "fbo.h"
 
 using namespace std;
+
+static int WIDTH = 1024, HEIGHT = 768;
+
+static void clearActiveBuffer() {
+  glEnable(GL_DEPTH_TEST);
+  glClearColor(1, 1, 1, 1);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+  checkErrors();
+}
 
 static GLuint loadShader(string vertSource, string fragSource) {
   GLuint shaderProgram = generateShaderProgram(vertSource, fragSource);
@@ -37,10 +47,12 @@ static GLuint loadShader(string vertSource, string fragSource) {
   return shaderProgram;
 }
 
-typedef function<void (float)> Renderer;
+typedef function<void(float)> Renderer;
 
-static Renderer generateSimpleRenderer(function<void(GLuint)> bindShader, function<
-    void(Uniforms)> renderScene) {
+static Renderer generateSimpleRenderer(
+    function<void(GLuint)> bindShader,
+    function<void(Uniforms)> renderScene
+    ) {
   GLuint shader = loadShader("simple.vert", "simple.frag");
   Uniforms uniforms = getUniforms(shader);
 
@@ -48,9 +60,8 @@ static Renderer generateSimpleRenderer(function<void(GLuint)> bindShader, functi
 
   return [=] (float time) {
     glUseProgram(shader);
-    glEnable(GL_DEPTH_TEST);
-    glClearColor(1, 1, 1, 1);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+    clearActiveBuffer();
     checkErrors();
 
     // render scene (includes setting up camera)
@@ -59,8 +70,10 @@ static Renderer generateSimpleRenderer(function<void(GLuint)> bindShader, functi
   };
 }
 
-static Renderer generateDirLightRenderer(function<void(GLuint)> bindShader, function<
-    void(Uniforms)> renderScene) {
+static Renderer generateDirLightRenderer(
+    function<void(GLuint)> bindShader,
+    function<void(Uniforms)> renderScene
+    ) {
   GLuint shader = loadShader("dir_light.vert", "dir_light.frag");
   Uniforms uniforms = getUniforms(shader);
 
@@ -73,9 +86,8 @@ static Renderer generateDirLightRenderer(function<void(GLuint)> bindShader, func
 
   return [=] (float time) {
     glUseProgram(shader);
-    glEnable(GL_DEPTH_TEST);
-    glClearColor(1, 1, 1, 1);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+    clearActiveBuffer();
     checkErrors();
 
     // setup lighting
@@ -93,8 +105,10 @@ static Renderer generateDirLightRenderer(function<void(GLuint)> bindShader, func
   };
 }
 
-static Renderer generateHatchRenderer(function<void(GLuint)> bindShader, function<
-    void(Uniforms)> renderScene) {
+static Renderer generateHatchRenderer(
+    function<void(GLuint)> bindShader,
+    function<void(Uniforms)> renderScene
+    ) {
   GLuint shader = loadShader("dir_light.vert", "hatched.frag");
   Uniforms uniforms = getUniforms(shader);
 
@@ -108,9 +122,7 @@ static Renderer generateHatchRenderer(function<void(GLuint)> bindShader, functio
 
   return [=] (float time) {
     glUseProgram(shader);
-    glEnable(GL_DEPTH_TEST);
-    glClearColor(1, 1, 1, 1);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    clearActiveBuffer();
     checkErrors();
 
     // setup lighting
@@ -128,6 +140,56 @@ static Renderer generateHatchRenderer(function<void(GLuint)> bindShader, functio
   };
 }
 
+static Renderer generateSSAORenderer(
+    auto bindShader,
+    auto renderScene
+    ) {
+  GLuint renderShader = loadShader("dir_light.vert", "hatched.frag");
+  Uniforms renderUniforms = getUniforms(renderShader);
+
+  GLuint frameShader = loadShader("dir_light.vert", "hatched.frag");
+  Uniforms frameUniforms = getUniforms(frameShader);
+
+  FBO *fbo = new FBO(WIDTH, HEIGHT);
+  fbo->BindToShader(frameShader);
+
+  string tilesSource = "tiled_hatches.png";
+  int tilesNum = 6;
+  int tilesIndex = nextTextureIndex();
+  GLuint tilesTexture = loadTexture(tilesSource, tilesIndex);
+  checkErrors();
+
+  bindShader(renderShader);
+  bindShader(frameShader);
+
+  return [=] (float time) {
+    // draw to the frame buffer
+    glUseProgram(renderShader);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo->GetFrameBuffer());
+    clearActiveBuffer();
+    checkErrors();
+
+    // setup lighting
+    glm::vec3 lightDir = glm::vec3(-1,-1,-1);
+    lightDir = glm::rotate(lightDir, time, glm::vec3(0,0,1));
+    glUniform3fv(renderUniforms.lightDir, 1, glm::value_ptr(lightDir));
+
+    // render hatched tiles texture
+    glUniform1i(renderUniforms.numTiles, tilesNum);
+    glUniform1i(renderUniforms.tilesTexture, tilesIndex);
+
+    // render scene (includes setting up camera)
+    renderScene(renderUniforms);
+    checkErrors();
+
+    // draw the frame buffer to the screen
+    glUseProgram(frameShader);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    clearActiveBuffer();
+    fbo->Render();
+  };
+}
+
 int main(int argv, char *argc[]) {
   SDL_Init(SDL_INIT_VIDEO);
   SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
@@ -136,7 +198,7 @@ int main(int argv, char *argc[]) {
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
 
-  SDL_Window *window = SDL_CreateWindow("OpenGL", 100, 100, 800, 600, SDL_WINDOW_OPENGL);
+  SDL_Window *window = SDL_CreateWindow("OpenGL", 100, 100, WIDTH, HEIGHT, SDL_WINDOW_OPENGL);
   SDL_GLContext context = SDL_GL_CreateContext(window);
 
   glewExperimental = GL_TRUE; // necessary for modern opengl calls
@@ -152,14 +214,14 @@ int main(int argv, char *argc[]) {
       glm::vec3(3.0f, 0.0f, 1.0f), // location of camera
       glm::vec3(0, 0, 0), // look at
       glm::vec3(0, 0, 1)  // camera up vector
-  );
+      );
 
   glm::mat4 projTrans = glm::perspective(
       45.0f, // fov y
       800.0f / 600.0f, // aspect
       0.2f,  // near
       10.0f  //far
-  );
+      );
 
   auto renderScene = [&] (Uniforms u) {
     camera->SetupTransforms(u.viewTrans, u.projTrans);
@@ -190,14 +252,16 @@ int main(int argv, char *argc[]) {
   SDL_Event windowEvent;
   while (quit == false) {
     while (SDL_PollEvent(&windowEvent)) {
-      if (windowEvent.type == SDL_QUIT) { quit = true; }
+      if (windowEvent.type == SDL_QUIT) {
+        quit = true;
+      }
       if (windowEvent.type == SDL_KEYDOWN) {
         switch (windowEvent.key.keysym.sym) {
           case SDLK_ESCAPE:
             quit = true;
             break;
           case SDLK_s:
-            rendererIndex ++;
+            rendererIndex++;
             rendererIndex %= renderers.size();
             break;
         }
