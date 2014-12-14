@@ -10,11 +10,24 @@ uniform sampler2D unifTilesTexture;
 uniform int unifNumTiles;
 
 void main() {
-	int tileIndex = int((1 - outVertLighting) * unifNumTiles);
-	vec2 tileUV = outVertUV;
-	// tileUV.x = mod(tileUV.x * 2, 1);
-	// tileUV.y = mod(tileUV.y * 2, 1);
-	tileUV.x = mod(tileUV.x, 1);
-	tileUV.x = tileUV.x * (1.0 / 6) + tileIndex * (1.0 / 6);
-  outFragColor = texture(unifTilesTexture, tileUV);
+	float tileWeights[12]; // always must be greater than the number of tiles
+	for (int i = 0; i < 12; i ++) {
+		tileWeights[i] = 0;
+	}
+	
+	// setting the corresponding tile weight
+	float exact = (1 - outVertLighting) * unifNumTiles;
+	int index = int(exact);
+	float weight = exact - index;
+	
+	tileWeights[index] = weight;
+	tileWeights[index + 1] = 1 - weight;
+	
+	outFragColor = vec4(0,0,0,1);
+	for (int i = 0; i < unifNumTiles; i ++) {
+		vec2 tileUV = outVertUV;
+		tileUV.x = mod(tileUV.x, 1);
+		tileUV.x = tileUV.x * (1.0 / 6) + i * (1.0 / 6);
+		outFragColor += tileWeights[i] * texture(unifTilesTexture, tileUV);
+	}
 }
