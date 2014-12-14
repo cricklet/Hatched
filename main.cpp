@@ -27,6 +27,25 @@
 
 using namespace std;
 
+static bool shouldQuit(SDL_Event &event) {
+  if (event.type == SDL_QUIT)
+    return true;
+
+  if (event.type == SDL_KEYDOWN)
+    if (event.key.keysym.sym == SDLK_ESCAPE)
+      return true;
+
+  return false;
+}
+
+static bool shouldSwitchRenderer(SDL_Event &event) {
+  if (event.type == SDL_KEYDOWN)
+    if (event.key.keysym.sym == SDLK_s)
+      return true;
+
+  return false;
+}
+
 static GLuint loadShader(string vertSource, string fragSource) {
   GLuint shaderProgram = generateShaderProgram(vertSource, fragSource);
   checkErrors();
@@ -37,44 +56,95 @@ static GLuint loadShader(string vertSource, string fragSource) {
   return shaderProgram;
 }
 
-struct Renderer {
-  function<void (void)> preRender;
-  function<void (void)> postRender;
-};
+typedef function<void (float)> Renderer;
 
-static Renderer generateSimpleRenderer(
-    function<void (GLuint)> bindShaderProgram
-) {
+static Renderer generateSimpleRenderer(function<void(GLuint)> bindShader, function<
+    void(Uniforms)> renderScene) {
   GLuint shader = loadShader("simple.vert", "simple.frag");
   Uniforms uniforms = getUniforms(shader);
 
-  bindShaderProgram(shader);
+  bindShader(shader);
 
-  Renderer renderer;
-  renderer.preRender = [&] () {
+  return [=] (float time) {
     glUseProgram(shader);
-
+    glEnable(GL_DEPTH_TEST);
     glClearColor(1, 1, 1, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     checkErrors();
 
+    // render scene (includes setting up camera)
+    renderScene(uniforms);
+    checkErrors();
+  };
+}
+
+static Renderer generateDirLightRenderer(function<void(GLuint)> bindShader, function<
+    void(Uniforms)> renderScene) {
+  GLuint shader = loadShader("dir_light.vert", "dir_light.frag");
+  Uniforms uniforms = getUniforms(shader);
+
+  string gridSource = "grid.png";
+  int gridIndex = nextTextureIndex();
+  GLuint gridTexture = loadTexture(gridSource, gridIndex);
+  checkErrors();
+
+  bindShader(shader);
+
+  return [=] (float time) {
+    glUseProgram(shader);
     glEnable(GL_DEPTH_TEST);
+    glClearColor(1, 1, 1, 1);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    checkErrors();
+
+    // setup lighting
+    glm::vec3 lightDir = glm::vec3(-1,-1,-1);
+    lightDir = glm::rotate(lightDir, time, glm::vec3(0,0,1));
+    glUniform3fv(uniforms.lightDir, 1, glm::value_ptr(lightDir));
+
+    // render a test texture
+    glUniform1i(uniforms.useTexture, 1);
+    glUniform1i(uniforms.texture, gridIndex);
+
+    // render scene (includes setting up camera)
+    renderScene(uniforms);
     checkErrors();
   };
-  renderer.postRender = [&] () {
+}
+
+static Renderer generateHatchRenderer(function<void(GLuint)> bindShader, function<
+    void(Uniforms)> renderScene) {
+  GLuint shader = loadShader("dir_light.vert", "hatched.frag");
+  Uniforms uniforms = getUniforms(shader);
+
+  string tilesSource = "tiled_hatches.png";
+  int tilesNum = 6;
+  int tilesIndex = nextTextureIndex();
+  GLuint tilesTexture = loadTexture(tilesSource, tilesIndex);
+  checkErrors();
+
+  bindShader(shader);
+
+  return [=] (float time) {
+    glUseProgram(shader);
+    glEnable(GL_DEPTH_TEST);
+    glClearColor(1, 1, 1, 1);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    checkErrors();
+
+    // setup lighting
+    glm::vec3 lightDir = glm::vec3(-1,-1,-1);
+    lightDir = glm::rotate(lightDir, time, glm::vec3(0,0,1));
+    glUniform3fv(uniforms.lightDir, 1, glm::value_ptr(lightDir));
+
+    // render hatched tiles texture
+    glUniform1i(uniforms.numTiles, tilesNum);
+    glUniform1i(uniforms.tilesTexture, tilesIndex);
+
+    // render scene (includes setting up camera)
+    renderScene(uniforms);
     checkErrors();
   };
-
-  return renderer;
-}
-
-static function<void (void)> generateFunc() {
-  return [] () { cout << "blah\n"; };
-}
-
-static void testFunc() {
-  function<void (void)> blah = generateFunc();
-  blah();
 }
 
 int main(int argv, char *argc[]) {
@@ -92,48 +162,10 @@ int main(int argv, char *argc[]) {
   glewInit();
   checkErrors();
 
-  testFunc();
-
   Camera *camera = new Camera();
 
   Model *model = new Model("nanosuit/nanosuit2.obj");
   checkErrors();
-
-  vector<string> vertSources;
-  vector<string> fragSources;
-
-  vertSources.push_back("simple.vert");
-  fragSources.push_back("simple.frag");
-
-  vertSources.push_back("dir_light.vert");
-  fragSources.push_back("dir_light.frag");
-
-  vertSources.push_back("dir_light.vert");
-  fragSources.push_back("hatched.frag");
-
-  vertSources.push_back("render_buffer.vert");
-  fragSources.push_back("render_buffer.frag");
-
-  GLuint shaderPrograms[3];
-  Uniforms shaderUniforms[3];
-
-  int numShaders = 3;
-  int shaderIndex = 0;
-
-  for (int i = 0; i < numShaders; i++) {
-    GLuint shaderProgram = generateShaderProgram(vertSources[i], fragSources[i]);
-    checkErrors();
-
-    glBindFragDataLocation(shaderProgram, 0, "outFragColor");
-    glUseProgram(shaderProgram);
-    checkErrors();
-
-    shaderUniforms[i] = getUniforms(shaderProgram);
-
-    model->BindToShader(shaderProgram);
-
-    shaderPrograms[i] = shaderProgram;
-  }
 
   glm::mat4 viewTrans = glm::lookAt(
       glm::vec3(3.0f, 0.0f, 1.0f), // location of camera
@@ -148,16 +180,25 @@ int main(int argv, char *argc[]) {
       10.0f  //far
   );
 
-  string gridSource = "grid.png";
-  int gridIndex = nextTextureIndex();
-  GLuint gridTexture = loadTexture(gridSource, gridIndex);
-  checkErrors();
+  auto renderScene = [&] (Uniforms u) {
+    camera->SetupTransforms(u.viewTrans, u.projTrans);
+    checkErrors();
 
-  string tilesSource = "tiled_hatches.png";
-  int tilesNum = 6;
-  int tilesIndex = nextTextureIndex();
-  GLuint tilesTexture = loadTexture(tilesSource, tilesIndex);
-  checkErrors();
+    model->Render(u);
+    checkErrors();
+  };
+
+  auto bindShader = [&] (GLuint s) {
+    model->BindToShader(s);
+  };
+
+  vector<Renderer> renderers = {
+      generateSimpleRenderer(bindShader, renderScene),
+      generateDirLightRenderer(bindShader, renderScene),
+      generateHatchRenderer(bindShader, renderScene),
+  };
+
+  int rendererIndex = 0;
 
   struct timeval t;
   gettimeofday(&t, NULL);
@@ -168,16 +209,10 @@ int main(int argv, char *argc[]) {
   SDL_Event windowEvent;
   while (quit == false) {
     while (SDL_PollEvent(&windowEvent)) {
-      if (windowEvent.type == SDL_QUIT) {
-        quit = true;
-      }
-      if (windowEvent.type == SDL_KEYDOWN) {
-        if (windowEvent.key.keysym.sym == SDLK_ESCAPE) {
-          quit = true;
-        }
-        if (windowEvent.key.keysym.sym == SDLK_s) {
-          shaderIndex = (shaderIndex + 1) % numShaders;
-        }
+      if (shouldQuit(windowEvent)) quit = true;
+      if (shouldSwitchRenderer(windowEvent)) {
+        rendererIndex ++;
+        rendererIndex %= renderers.size();
       }
 
       camera->HandleEvent(windowEvent);
@@ -187,11 +222,7 @@ int main(int argv, char *argc[]) {
     long int currentTime = t.tv_sec * 1000 + t.tv_usec / 1000;
     float time = (float) (currentTime - startTime) / 1000.0f;
 
-    // Camera setup
-    camera->SetupTransforms(shaderUniforms[shaderIndex].viewTrans, shaderUniforms[shaderIndex].projTrans);
-    checkErrors();
-
-    model->Render(u);
+    renderers[rendererIndex](time);
 
     SDL_GL_SwapWindow(window);
     checkErrors();
