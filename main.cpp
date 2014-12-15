@@ -20,7 +20,15 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include <QtGui/QApplication>
+#include <QtGui/QDialog>
+#include <QtGui/QMessageBox>
+#include <QtCore/QThread>
+#include <QtCore/QThreadPool>
+#include <QtCore/QRunnable>
+
 #include "helper.h"
+#include "uniforms.h"
 #include "camera.h"
 #include "mesh.h"
 #include "model.h"
@@ -51,10 +59,13 @@ typedef function<void(float)> Renderer;
 
 static Renderer generateSimpleRenderer(
     function<void(GLuint)> bindShader,
-    function<void(Uniforms)> renderScene
+    function<void(UniformGetter)> renderScene
     ) {
   GLuint shader = loadShader("simple.vert", "simple.frag");
-  Uniforms uniforms = getUniforms(shader);
+  UniformsMap uniformsMap;
+  addUniforms(uniformsMap, shader, TRANS_UNIFORMS);
+  addUniforms(uniformsMap, shader, COLOR);
+  UniformGetter uniforms = generateUniformGetter(uniformsMap);
 
   bindShader(shader);
 
@@ -72,10 +83,15 @@ static Renderer generateSimpleRenderer(
 
 static Renderer generateDirLightRenderer(
     function<void(GLuint)> bindShader,
-    function<void(Uniforms)> renderScene
+    function<void(UniformGetter)> renderScene
     ) {
   GLuint shader = loadShader("dir_light.vert", "dir_light.frag");
-  Uniforms uniforms = getUniforms(shader);
+  UniformsMap uniformsMap;
+  addUniforms(uniformsMap, shader, TRANS_UNIFORMS);
+  addUniforms(uniformsMap, shader, COLOR);
+  addUniforms(uniformsMap, shader, TEXTURE_UNIFORMS);
+  addUniforms(uniformsMap, shader, LIGHT_DIR);
+  UniformGetter uniforms = generateUniformGetter(uniformsMap);
 
   string gridSource = "grid.png";
   int gridIndex = nextTextureIndex();
@@ -93,11 +109,13 @@ static Renderer generateDirLightRenderer(
     // setup lighting
     glm::vec3 lightDir = glm::vec3(-1,-1,-1);
     lightDir = glm::rotate(lightDir, time, glm::vec3(0,0,1));
-    glUniform3fv(uniforms.lightDir, 1, glm::value_ptr(lightDir));
+    glUniform3fv(uniforms(LIGHT_DIR), 1, glm::value_ptr(lightDir));
+    checkErrors();
 
     // render a test texture
-    glUniform1i(uniforms.useTexture, 1);
-    glUniform1i(uniforms.texture, gridIndex);
+    glUniform1i(uniforms(USE_TEXTURE), 1);
+    glUniform1i(uniforms(TEXTURE), gridIndex);
+    checkErrors();
 
     // render scene (includes setting up camera)
     renderScene(uniforms);
@@ -107,10 +125,15 @@ static Renderer generateDirLightRenderer(
 
 static Renderer generateHatchRenderer(
     function<void(GLuint)> bindShader,
-    function<void(Uniforms)> renderScene
+    function<void(UniformGetter)> renderScene
     ) {
   GLuint shader = loadShader("dir_light.vert", "hatched.frag");
-  Uniforms uniforms = getUniforms(shader);
+  UniformsMap uniformsMap;
+  addUniforms(uniformsMap, shader, TRANS_UNIFORMS);
+  addUniforms(uniformsMap, shader, COLOR);
+  addUniforms(uniformsMap, shader, TILE_UNIFORMS);
+  addUniforms(uniformsMap, shader, LIGHT_DIR);
+  UniformGetter uniforms = generateUniformGetter(uniformsMap);
 
   string tilesSource = "tiled_hatches.png";
   int tilesNum = 6;
@@ -128,11 +151,11 @@ static Renderer generateHatchRenderer(
     // setup lighting
     glm::vec3 lightDir = glm::vec3(-1,-1,-1);
     lightDir = glm::rotate(lightDir, time, glm::vec3(0,0,1));
-    glUniform3fv(uniforms.lightDir, 1, glm::value_ptr(lightDir));
+    glUniform3fv(uniforms(LIGHT_DIR), 1, glm::value_ptr(lightDir));
 
     // render hatched tiles texture
-    glUniform1i(uniforms.numTiles, tilesNum);
-    glUniform1i(uniforms.tilesTexture, tilesIndex);
+    glUniform1i(uniforms(NUM_TILES), tilesNum);
+    glUniform1i(uniforms(TILES_TEXTURE), tilesIndex);
 
     // render scene (includes setting up camera)
     renderScene(uniforms);
@@ -142,14 +165,22 @@ static Renderer generateHatchRenderer(
 
 static Renderer generateSSAORenderer(
     function<void(GLuint)> bindShader,
-    function<void(Uniforms)> renderScene
+    function<void(UniformGetter)> renderScene
     ) {
   GLuint normalsShader = loadShader("normals.vert", "normals.frag");
-  Uniforms normalsUniforms = getUniforms(normalsShader);
+  UniformsMap normalsUniformsMap;
+  addUniforms(normalsUniformsMap, normalsShader, TRANS_UNIFORMS);
+  UniformGetter normalsUniforms = generateUniformGetter(normalsUniformsMap);
 
   GLuint frameShader = loadShader("render_buffer.vert", "ssao.frag");
-  Uniforms frameUniforms = getUniforms(frameShader);
+  UniformsMap frameUniformsMap;
+  addUniforms(frameUniformsMap, frameShader, BUFFER);
+  addUniforms(frameUniformsMap, frameShader, RANDOM);
+  UniformGetter frameUniforms = generateUniformGetter(frameUniformsMap);
   checkErrors();
+
+  cout << "SSAO Renderer:\n";
+  printUniforms(frameUniformsMap);
 
   int noiseIndex = nextTextureIndex();
   GLuint noiseTexture = loadTexture("noise.png", noiseIndex);
@@ -178,8 +209,10 @@ static Renderer generateSSAORenderer(
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     clearActiveBuffer();
 
-    glUniform1i(frameUniforms.random, noiseIndex);
-    glUniform1i(frameUniforms.buffer, normalsFBO->GetTextureIndex());
+    glUniform1i(frameUniforms(RANDOM), noiseIndex);
+    glUniform1i(frameUniforms(BUFFER), normalsFBO->GetTextureIndex());
+    checkErrors();
+
     normalsFBO->Render();
   };
 }
@@ -228,7 +261,15 @@ static Model *loadHouse() {
   return model;
 }
 
-int main(int argv, char *argc[]) {
+class Runnable: public QRunnable {
+public:
+  Runnable(auto func) {this->func = func; }
+  void run() { func(); }
+private:
+  function<void (void)> func;
+};
+
+int sdlMain() {
   SDL_Init(SDL_INIT_VIDEO);
   SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 
@@ -243,11 +284,11 @@ int main(int argv, char *argc[]) {
   glewInit();
   checkErrors();
 
-//  Camera *camera = new FPSCamera();
+  //  Camera *camera = new FPSCamera();
   Camera *camera = new RotationCamera();
 
-//  Model *model = loadNanosuit();
-//  Model *model = loadHouse();
+  //  Model *model = loadNanosuit();
+  //  Model *model = loadHouse();
   Model *model = loadCharacter();
 
   glm::mat4 viewTrans = glm::lookAt(
@@ -263,8 +304,8 @@ int main(int argv, char *argc[]) {
       10.0f  //far
       );
 
-  auto renderScene = [&] (Uniforms u) {
-    camera->SetupTransforms(u.viewTrans, u.projTrans);
+  auto renderScene = [&] (UniformGetter u) {
+    camera->SetupTransforms(u(VIEW_TRANS), u(PROJ_TRANS));
     checkErrors();
 
     model->Render(u);
@@ -328,5 +369,17 @@ int main(int argv, char *argc[]) {
 
   SDL_GL_DeleteContext(context);
   SDL_Quit();
-  return 0;
+}
+
+int main(int argc, char *argv[]) {
+  QApplication app(argc, argv);
+
+  Runnable *runnable = new Runnable([] () { sdlMain(); });
+  QThreadPool *pool = new QThreadPool();
+  pool->start(runnable);
+
+  QMessageBox mb(QMessageBox::Question, "blah", "blah", QMessageBox::Ok);
+  mb.exec();
+
+  return app.exec();
 }

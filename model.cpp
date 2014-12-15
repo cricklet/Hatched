@@ -108,8 +108,8 @@ Model::Model(string path, glm::mat4 transform) {
   this->transform = transform;
 }
 
-void Model::Render(const Uniforms &uniforms) {
-  glUniformMatrix4fv(uniforms.modelTrans, 1, GL_FALSE, glm::value_ptr(this->transform));
+void Model::Render(UniformGetter uniforms) {
+  glUniformMatrix4fv(uniforms(MODEL_TRANS), 1, GL_FALSE, glm::value_ptr(this->transform));
 
   for (Mesh m : this->meshes) {
     m.Render(uniforms);

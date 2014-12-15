@@ -10,20 +10,6 @@ using namespace std;
 #define GLEW_STATIC
 #include <GL/glew.h>
 
-struct Uniforms {
-  GLint modelTrans;
-  GLint viewTrans;
-  GLint projTrans;
-  GLint useTexture;
-  GLint color;
-  GLint texture;
-  GLint numTiles;
-  GLint tilesTexture;
-  GLint lightDir;
-  GLint buffer;
-  GLint random;
-};
-
 float random(float max);
 
 bool _checkErrors(const char *filename, int line);
@@ -35,5 +21,4 @@ GLuint loadTexture(string filename, int index);
 
 int nextTextureIndex();
 
-Uniforms getUniforms(GLint shaderProgram);
 #endif

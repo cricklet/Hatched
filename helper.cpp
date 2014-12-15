@@ -159,36 +159,3 @@ static GLuint generateShaderProgram(const char *vertSource, const char *fragSour
 GLuint generateShaderProgram(string vertSource, string fragSource) {
   return generateShaderProgram(vertSource.c_str(), fragSource.c_str());
 }
-
-Uniforms getUniforms(GLint shaderProgram) {
-  Uniforms uniforms;
-  glUseProgram(shaderProgram);
-
-  uniforms.modelTrans = glGetUniformLocation(shaderProgram, "unifModelTrans");
-  uniforms.viewTrans = glGetUniformLocation(shaderProgram, "unifViewTrans");
-  uniforms.projTrans = glGetUniformLocation(shaderProgram, "unifProjTrans");
-  uniforms.useTexture = glGetUniformLocation(shaderProgram, "unifUseTexture");
-  uniforms.color = glGetUniformLocation(shaderProgram, "unifColor");
-  uniforms.texture = glGetUniformLocation(shaderProgram, "unifTexture");
-  uniforms.numTiles = glGetUniformLocation(shaderProgram, "unifNumTiles");
-  uniforms.tilesTexture = glGetUniformLocation(shaderProgram, "unifTilesTexture");
-  uniforms.lightDir = glGetUniformLocation(shaderProgram, "unifLightDir");
-  uniforms.buffer = glGetUniformLocation(shaderProgram, "unifBuffer");
-  uniforms.random = glGetUniformLocation(shaderProgram, "unifRandom");
-
-  cout << "Loaded uniforms for: " << shaderProgram << "\n";
-  cout << "  modelTrans: " << uniforms.modelTrans << "\n";
-  cout << "  viewTrans: " << uniforms.viewTrans << "\n";
-  cout << "  projTrans: " << uniforms.projTrans << "\n";
-  cout << "  useTexture: " << uniforms.useTexture << "\n";
-  cout << "  color: " << uniforms.color << "\n";
-  cout << "  texture: " << uniforms.texture << "\n";
-  cout << "  num tiles: " << uniforms.numTiles << "\n";
-  cout << "  tiles texture: " << uniforms.tilesTexture << "\n";
-  cout << "  light dir: " << uniforms.lightDir << "\n";
-  cout << "  buffer: " << uniforms.buffer << "\n";
-  cout << "  random: " << uniforms.random << "\n";
-
-  return uniforms;
-}
-

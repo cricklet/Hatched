@@ -18,6 +18,7 @@
 using namespace std;
 
 #include "helper.h"
+#include "uniforms.h"
 
 struct Vertex {
   glm::vec3 position;
@@ -41,7 +42,7 @@ public:
   vector<Vertex> vertices;
   vector<GLuint> indices;
 
-  void Render(const Uniforms &uniforms);
+  void Render(UniformGetter uniforms);
   void BindToShader(GLuint shaderProgram);
 
   Bounds GetBounds();

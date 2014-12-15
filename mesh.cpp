@@ -55,9 +55,12 @@ void Mesh::BindToShader(GLuint shaderProgram) {
   }
 }
 
-void Mesh::Render(const Uniforms &uniforms) {
+void Mesh::Render(UniformGetter uniforms) {
   // load the first texture
-  glUniform3fv(uniforms.color, 1, glm::value_ptr(this->color));
+  GLint colorUnif = uniforms(COLOR);
+  if (colorUnif != -1) {
+    glUniform3fv(colorUnif, 1, glm::value_ptr(this->color));
+  }
   checkErrors();
 
   // draw the mesh!
