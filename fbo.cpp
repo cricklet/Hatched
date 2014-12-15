@@ -25,7 +25,7 @@ static GLuint generateVBO() {
   return vbo;
 }
 
-static GLuint generateFBO(int index, int width, int height) {
+static GLuint generateFBO(int index, int width, int height, GLuint pixelType) {
   GLuint fbo;
   glGenFramebuffers(1, &fbo);
   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
@@ -38,7 +38,7 @@ static GLuint generateFBO(int index, int width, int height) {
   glBindTexture(GL_TEXTURE_2D, fboTexture);
   checkErrors();
 
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL /*no data*/);
+  glTexImage2D(GL_TEXTURE_2D, 0, pixelType, width, height, 0, pixelType, GL_UNSIGNED_BYTE, NULL /*no data*/);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   checkErrors();
@@ -66,12 +66,12 @@ static GLuint generateFBO(int index, int width, int height) {
   return fbo;
 }
 
-FBO::FBO(int width, int height) {
+FBO::FBO(int width, int height, GLuint pixelType) {
   glGenVertexArrays(1, &this->vao);
   glBindVertexArray(this->vao);
 
   this->textureIndex = nextTextureIndex();
-  this->fbo = generateFBO(this->textureIndex, width, height);
+  this->fbo = generateFBO(this->textureIndex, width, height, pixelType);
   this->vbo = generateVBO();
 }
 

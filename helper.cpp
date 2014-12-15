@@ -174,18 +174,20 @@ Uniforms getUniforms(GLint shaderProgram) {
   uniforms.tilesTexture = glGetUniformLocation(shaderProgram, "unifTilesTexture");
   uniforms.lightDir = glGetUniformLocation(shaderProgram, "unifLightDir");
   uniforms.buffer = glGetUniformLocation(shaderProgram, "unifBuffer");
+  uniforms.random = glGetUniformLocation(shaderProgram, "unifRandom");
 
-  //cout << "Loaded uniforms for: " << shaderProgram << "\n";
-  //cout << "  modelTrans: " << uniforms.modelTrans << "\n";
-  //cout << "  viewTrans: " << uniforms.viewTrans << "\n";
-  //cout << "  projTrans: " << uniforms.projTrans << "\n";
-  //cout << "  useTexture: " << uniforms.useTexture << "\n";
-  //cout << "  color: " << uniforms.color << "\n";
-  //cout << "  texture: " << uniforms.texture << "\n";
-  //cout << "  num tiles: " << uniforms.numTiles << "\n";
-  //cout << "  tiles texture: " << uniforms.tilesTexture << "\n";
-  //cout << "  light dir: " << uniforms.lightDir << "\n";
-  //cout << "  buffer: " << uniforms.buffer << "\n";
+  cout << "Loaded uniforms for: " << shaderProgram << "\n";
+  cout << "  modelTrans: " << uniforms.modelTrans << "\n";
+  cout << "  viewTrans: " << uniforms.viewTrans << "\n";
+  cout << "  projTrans: " << uniforms.projTrans << "\n";
+  cout << "  useTexture: " << uniforms.useTexture << "\n";
+  cout << "  color: " << uniforms.color << "\n";
+  cout << "  texture: " << uniforms.texture << "\n";
+  cout << "  num tiles: " << uniforms.numTiles << "\n";
+  cout << "  tiles texture: " << uniforms.tilesTexture << "\n";
+  cout << "  light dir: " << uniforms.lightDir << "\n";
+  cout << "  buffer: " << uniforms.buffer << "\n";
+  cout << "  random: " << uniforms.random << "\n";
 
   return uniforms;
 }

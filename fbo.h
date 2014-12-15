@@ -12,7 +12,7 @@ using namespace std;
 
 class FBO {
  public:
-  FBO(int width, int height);
+  FBO(int width, int height, GLuint pixelType = GL_RGB);
   void BindToShader(GLuint shaderProgram);
   GLuint GetFrameBuffer();
   int GetTextureIndex();

@@ -21,6 +21,7 @@ struct Uniforms {
   GLint tilesTexture;
   GLint lightDir;
   GLint buffer;
+  GLint random;
 };
 
 float random(float max);

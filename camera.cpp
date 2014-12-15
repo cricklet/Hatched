@@ -11,8 +11,8 @@ RotationCamera::RotationCamera() {
   this->projTrans = glm::perspective(
       45.0f, // fov y
       800.0f / 600.0f, // aspect
-      0.2f,  // near
-      10.0f  //far
+      0.1f,  // near
+      100.0f  //far
   );
 }
 
@@ -64,8 +64,8 @@ FPSCamera::FPSCamera() {
   this->projTrans = glm::perspective(
       45.0f, // fov y
       800.0f / 600.0f, // aspect
-      0.2f,  // near
-      40.0f  //far
+      0.1f,  // near
+      100.0f  //far
   );
 }
 
@@ -137,24 +137,14 @@ void FPSCamera::Think(float dt) {
   if (s) dir.y -= 1;
   if (d) dir.x += 1;
 
-  this->location += 4 * dt * forward * dir.y;
-  this->location += 4 * dt * right * dir.x;
+  this->location += dt * forward * dir.y;
+  this->location += dt * right * dir.x;
 
   this->viewTrans = glm::lookAt(
       this->location, // location of camera
       this->location + forward, // look at
       glm::vec3(0,0,1)  // camera up vector
   );
-
-  cout << "Location: "
-      << floorf(location.x * 10) / 10 << ", "
-      << floorf(location.z * 10) / 10 << ", "
-      << floorf(location.y * 10) / 10 << "\n";
-
-  cout << "Forward: "
-      << floorf(forward.x * 10) / 10 << ", "
-      << floorf(forward.z * 10) / 10 << ", "
-      << floorf(forward.y * 10) / 10 << "\n";
 }
 
 

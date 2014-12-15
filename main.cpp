@@ -30,9 +30,9 @@ using namespace std;
 
 static int WIDTH = 1024, HEIGHT = 768;
 
-static void clearActiveBuffer() {
+static void clearActiveBuffer(float rgb = 1, float a = 1) {
   glEnable(GL_DEPTH_TEST);
-  glClearColor(1, 1, 1, 1);
+  glClearColor(rgb, rgb, rgb, a);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
   checkErrors();
 }
@@ -144,32 +144,33 @@ static Renderer generateSSAORenderer(
     function<void(GLuint)> bindShader,
     function<void(Uniforms)> renderScene
     ) {
-  GLuint renderShader = loadShader("normals.vert", "normals.frag");
-  Uniforms renderUniforms = getUniforms(renderShader);
-  GLuint frameShader = loadShader("render_buffer.vert", "render_buffer.frag");
+  GLuint normalsShader = loadShader("normals.vert", "normals.frag");
+  Uniforms normalsUniforms = getUniforms(normalsShader);
+
+  GLuint frameShader = loadShader("render_buffer.vert", "ssao.frag");
   Uniforms frameUniforms = getUniforms(frameShader);
   checkErrors();
 
   int noiseIndex = nextTextureIndex();
   GLuint noiseTexture = loadTexture("noise.png", noiseIndex);
 
-  FBO *fbo = new FBO(WIDTH, HEIGHT);
-  fbo->BindToShader(frameShader);
+  FBO *normalsFBO = new FBO(WIDTH, HEIGHT, GL_RGBA);
+  normalsFBO->BindToShader(frameShader);
   checkErrors();
 
-  bindShader(renderShader);
+  bindShader(normalsShader);
   checkErrors();
 
   return [=] (float time) {
     // draw to the frame buffer
-    glUseProgram(renderShader);
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo->GetFrameBuffer());
+    glUseProgram(normalsShader);
+    glBindFramebuffer(GL_FRAMEBUFFER, normalsFBO->GetFrameBuffer());
 
-    clearActiveBuffer();
+    clearActiveBuffer(0,0);
     checkErrors();
 
     // render scene (includes setting up camera)
-    renderScene(renderUniforms);
+    renderScene(normalsUniforms);
     checkErrors();
 
     // draw the frame buffer to the screen
@@ -177,14 +178,29 @@ static Renderer generateSSAORenderer(
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     clearActiveBuffer();
 
-    glUniform1i(frameUniforms.buffer, fbo->GetTextureIndex());
-
-    fbo->Render();
+    glUniform1i(frameUniforms.random, noiseIndex);
+    glUniform1i(frameUniforms.buffer, normalsFBO->GetTextureIndex());
+    normalsFBO->Render();
   };
 }
 
 static Model *loadNanosuit() {
   Model *model = new Model("models/nanosuit/nanosuit2.obj");
+  glm::mat4 modelTrans = glm::mat4();
+
+  modelTrans = glm::translate(modelTrans, glm::vec3(0, 0, -0.5));
+  modelTrans = glm::rotate(modelTrans, (float) (M_PI / 2.0), glm::vec3(0, 0, 1));
+  modelTrans = glm::rotate(modelTrans, (float) (M_PI / 2.0), glm::vec3(1, 0, 0));
+  float scale = 1.0f / model->GetSize();
+  modelTrans = glm::scale(modelTrans, glm::vec3(scale, scale, scale));
+
+  model->SetTransform(modelTrans);
+
+  return model;
+}
+
+static Model *loadCharacter() {
+  Model *model = new Model("models/minion/minion.obj");
   glm::mat4 modelTrans = glm::mat4();
 
   modelTrans = glm::translate(modelTrans, glm::vec3(0, 0, -0.5));
@@ -227,11 +243,12 @@ int main(int argv, char *argc[]) {
   glewInit();
   checkErrors();
 
-  Camera *camera = new FPSCamera();
-//  Camera *camera = new RotationCamera();
+//  Camera *camera = new FPSCamera();
+  Camera *camera = new RotationCamera();
 
-  Model *model = loadNanosuit();
-  //Model *model = loadHouse();
+//  Model *model = loadNanosuit();
+//  Model *model = loadHouse();
+  Model *model = loadCharacter();
 
   glm::mat4 viewTrans = glm::lookAt(
       glm::vec3(3.0f, 0.0f, 1.0f), // location of camera
