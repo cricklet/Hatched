@@ -8,6 +8,8 @@
 #include <stdexcept>
 
 #include <sys/time.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #define GLEW_STATIC
 #include <GL/glew.h>
@@ -29,7 +31,31 @@
 
 using namespace std;
 
-static int WIDTH = 1024, HEIGHT = 768;
+static int WIDTH = 800, HEIGHT = 600;
+
+static long int getTimeOfDay() {
+  struct timeval t;
+  gettimeofday(&t, NULL);
+  return t.tv_sec * 1000 + t.tv_usec / 1000;
+}
+
+static long int getModifiedTime(string source) {
+  struct stat attrib;
+  stat(source.c_str(), &attrib);
+  return attrib.st_mtime;
+}
+
+static long int getModifiedTime(vector<string> sources) {
+  long int latestTime = 0;
+  for (string source : sources) {
+    long int time = getModifiedTime(source);
+    if (time > latestTime) {
+      latestTime = time;
+    }
+  }
+
+  return latestTime;
+}
 
 static void clearActiveBuffer(float rgb = 1, float a = 1) {
   glEnable(GL_DEPTH_TEST);
@@ -48,21 +74,28 @@ static GLuint loadShader(string vertSource, string fragSource) {
   return shaderProgram;
 }
 
-typedef function<void(float)> Renderer;
+typedef function<void (UniformGetter)> RenderScene;
+typedef function<void (GLuint)> BindScene;
+struct Renderer {
+  vector<string> sources;
+  long int loadTime;
+  function<void (RenderScene)> render;
+  GLuint sceneShader;
+};
 
-static Renderer generateSimpleRenderer(
-    function<void(GLuint)> bindShader,
-    function<void(UniformGetter)> renderScene
-    ) {
+static Renderer generateSimpleRenderer() {
   GLuint shader = loadShader("simple.vert", "simple.frag");
+
   UniformsMap uniformsMap;
   addUniforms(uniformsMap, shader, TRANS_UNIFORMS);
   addUniforms(uniformsMap, shader, COLOR);
   UniformGetter uniforms = generateUniformGetter(uniformsMap);
 
-  bindShader(shader);
-
-  return [=] (float time) {
+  Renderer r;
+  r.sources = {"simple.vert", "simple.frag"};
+  r.sceneShader = shader;
+  r.loadTime = getModifiedTime(r.sources);
+  r.render = [=] (RenderScene renderScene) {
     glUseProgram(shader);
 
     clearActiveBuffer();
@@ -72,142 +105,8 @@ static Renderer generateSimpleRenderer(
     renderScene(uniforms);
     checkErrors();
   };
-}
 
-static Renderer generateDirLightRenderer(
-    function<void(GLuint)> bindShader,
-    function<void(UniformGetter)> renderScene
-    ) {
-  GLuint shader = loadShader("dir_light.vert", "dir_light.frag");
-  UniformsMap uniformsMap;
-  addUniforms(uniformsMap, shader, TRANS_UNIFORMS);
-  addUniforms(uniformsMap, shader, COLOR);
-  addUniforms(uniformsMap, shader, TEXTURE_UNIFORMS);
-  addUniforms(uniformsMap, shader, LIGHT_DIR);
-  UniformGetter uniforms = generateUniformGetter(uniformsMap);
-
-  string gridSource = "grid.png";
-  int gridIndex = nextTextureIndex();
-  GLuint gridTexture = loadTexture(gridSource, gridIndex);
-  checkErrors();
-
-  bindShader(shader);
-
-  return [=] (float time) {
-    glUseProgram(shader);
-
-    clearActiveBuffer();
-    checkErrors();
-
-    // setup lighting
-    glm::vec3 lightDir = glm::vec3(-1,-1,-1);
-    lightDir = glm::rotate(lightDir, time, glm::vec3(0,0,1));
-    glUniform3fv(uniforms(LIGHT_DIR), 1, glm::value_ptr(lightDir));
-    checkErrors();
-
-    // render a test texture
-    glUniform1i(uniforms(USE_TEXTURE), 1);
-    glUniform1i(uniforms(TEXTURE), gridIndex);
-    checkErrors();
-
-    // render scene (includes setting up camera)
-    renderScene(uniforms);
-    checkErrors();
-  };
-}
-
-static Renderer generateHatchRenderer(
-    function<void(GLuint)> bindShader,
-    function<void(UniformGetter)> renderScene
-    ) {
-  GLuint shader = loadShader("dir_light.vert", "hatched.frag");
-  UniformsMap uniformsMap;
-  addUniforms(uniformsMap, shader, TRANS_UNIFORMS);
-  addUniforms(uniformsMap, shader, COLOR);
-  addUniforms(uniformsMap, shader, TILE_UNIFORMS);
-  addUniforms(uniformsMap, shader, LIGHT_DIR);
-  UniformGetter uniforms = generateUniformGetter(uniformsMap);
-
-  string tilesSource = "tiled_hatches.png";
-  int tilesNum = 6;
-  int tilesIndex = nextTextureIndex();
-  GLuint tilesTexture = loadTexture(tilesSource, tilesIndex);
-  checkErrors();
-
-  bindShader(shader);
-
-  return [=] (float time) {
-    glUseProgram(shader);
-    clearActiveBuffer();
-    checkErrors();
-
-    // setup lighting
-    glm::vec3 lightDir = glm::vec3(-1,-1,-1);
-    lightDir = glm::rotate(lightDir, time, glm::vec3(0,0,1));
-    glUniform3fv(uniforms(LIGHT_DIR), 1, glm::value_ptr(lightDir));
-
-    // render hatched tiles texture
-    glUniform1i(uniforms(NUM_TILES), tilesNum);
-    glUniform1i(uniforms(TILES_TEXTURE), tilesIndex);
-
-    // render scene (includes setting up camera)
-    renderScene(uniforms);
-    checkErrors();
-  };
-}
-
-static Renderer generateSSAORenderer(
-    function<void(GLuint)> bindShader,
-    function<void(UniformGetter)> renderScene
-    ) {
-  GLuint normalsShader = loadShader("normals.vert", "normals.frag");
-  UniformsMap normalsUniformsMap;
-  addUniforms(normalsUniformsMap, normalsShader, TRANS_UNIFORMS);
-  UniformGetter normalsUniforms = generateUniformGetter(normalsUniformsMap);
-
-  GLuint frameShader = loadShader("render_buffer.vert", "ssao.frag");
-  UniformsMap frameUniformsMap;
-  addUniforms(frameUniformsMap, frameShader, BUFFER);
-  addUniforms(frameUniformsMap, frameShader, RANDOM);
-  UniformGetter frameUniforms = generateUniformGetter(frameUniformsMap);
-  checkErrors();
-
-  cout << "SSAO Renderer:\n";
-  printUniforms(frameUniformsMap);
-
-  int noiseIndex = nextTextureIndex();
-  GLuint noiseTexture = loadTexture("noise.png", noiseIndex);
-
-  FBO *normalsFBO = new FBO(WIDTH, HEIGHT, GL_RGBA);
-  normalsFBO->BindToShader(frameShader);
-  checkErrors();
-
-  bindShader(normalsShader);
-  checkErrors();
-
-  return [=] (float time) {
-    // draw to the frame buffer
-    glUseProgram(normalsShader);
-    glBindFramebuffer(GL_FRAMEBUFFER, normalsFBO->GetFrameBuffer());
-
-    clearActiveBuffer(0,0);
-    checkErrors();
-
-    // render scene (includes setting up camera)
-    renderScene(normalsUniforms);
-    checkErrors();
-
-    // draw the frame buffer to the screen
-    glUseProgram(frameShader);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    clearActiveBuffer();
-
-    glUniform1i(frameUniforms(RANDOM), noiseIndex);
-    glUniform1i(frameUniforms(BUFFER), normalsFBO->GetTextureIndex());
-    checkErrors();
-
-    normalsFBO->Render();
-  };
+  return r;
 }
 
 static Model *loadNanosuit() {
@@ -254,6 +153,13 @@ static Model *loadHouse() {
   return model;
 }
 
+static bool shouldUpdateRenderer(Renderer &r) {
+  if (getModifiedTime(r.sources) > r.loadTime) {
+    return true;
+  }
+  return false;
+}
+
 int sdlMain() {
   SDL_Init(SDL_INIT_VIDEO);
   SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
@@ -289,6 +195,7 @@ int sdlMain() {
       10.0f  //far
       );
 
+
   auto renderScene = [&] (UniformGetter u) {
     camera->SetupTransforms(u(VIEW_TRANS), u(PROJ_TRANS));
     checkErrors();
@@ -297,30 +204,30 @@ int sdlMain() {
     checkErrors();
   };
 
-  auto bindShader = [&] (GLuint s) {
+  auto bindScene = [&] (GLuint s) {
     model->BindToShader(s);
   };
 
   vector<Renderer> renderers = {
-    generateSimpleRenderer(bindShader, renderScene),
-    generateDirLightRenderer(bindShader, renderScene),
-    generateHatchRenderer(bindShader, renderScene),
-    generateSSAORenderer(bindShader, renderScene),
+    generateSimpleRenderer()
   };
+
+  for (Renderer r : renderers) {
+    bindScene(r.sceneShader);
+  }
 
   int rendererIndex = 0;
 
-  struct timeval t;
-  gettimeofday(&t, NULL);
-  long int startTime = t.tv_sec * 1000 + t.tv_usec / 1000;
+  long int startTime = getTimeOfDay();
   long int lastTime = startTime;
+
+  float timeTillUpdateRenderer = 1.0f;
 
   bool quit = false;
 
   SDL_Event windowEvent;
   while (quit == false) {
-    gettimeofday(&t, NULL);
-    long int currentTime = t.tv_sec * 1000 + t.tv_usec / 1000;
+    long int currentTime = getTimeOfDay();
     float time = (float) (currentTime - startTime) / 1000.0f;
     float dt = (float) (currentTime - lastTime) / 1000.0f;
 
@@ -342,9 +249,24 @@ int sdlMain() {
       camera->HandleEvent(windowEvent);
     }
 
+    Renderer &r = renderers[rendererIndex];
+
+    timeTillUpdateRenderer -= dt;
+    if (timeTillUpdateRenderer < 0) {
+      if (shouldUpdateRenderer(r)) {
+        cout << "Attempting to reload renderer\n";
+
+        r = generateSimpleRenderer();
+        bindScene(r.sceneShader);
+
+        cout << "Loaded new renderer\n";
+      }
+      timeTillUpdateRenderer = 1.0f;
+    }
+
     camera->Think(dt);
 
-    renderers[rendererIndex](time);
+    r.render(renderScene);
 
     SDL_GL_SwapWindow(window);
     checkErrors();

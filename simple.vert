@@ -9,3 +9,5 @@ uniform mat4 unifProjTrans;
 void main () {
   gl_Position = unifProjTrans * unifViewTrans * unifModelTrans * vec4(inVertPosition, 1.0);
 }
+
+
