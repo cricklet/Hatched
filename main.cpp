@@ -20,16 +20,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include <QtGui/QApplication>
-#include <QtGui/QDialog>
-#include <QtGui/QLabel>
-#include <QtGui/QLineEdit>
-#include <QtGui/QMessageBox>
-#include <QtGui/QFormLayout>
-#include <QtCore/QThread>
-#include <QtCore/QThreadPool>
-#include <QtCore/QRunnable>
-
 #include "helper.h"
 #include "uniforms.h"
 #include "camera.h"
@@ -312,10 +302,10 @@ int sdlMain() {
   };
 
   vector<Renderer> renderers = {
-      generateSimpleRenderer(bindShader, renderScene),
-      generateDirLightRenderer(bindShader, renderScene),
-      generateHatchRenderer(bindShader, renderScene),
-      generateSSAORenderer(bindShader, renderScene),
+    generateSimpleRenderer(bindShader, renderScene),
+    generateDirLightRenderer(bindShader, renderScene),
+    generateHatchRenderer(bindShader, renderScene),
+    generateSSAORenderer(bindShader, renderScene),
   };
 
   int rendererIndex = 0;
@@ -366,50 +356,6 @@ int sdlMain() {
   SDL_Quit();
 }
 
-struct UniformEditor {
-  QLabel *label;
-  QLineEdit *edit;
-};
-
-class UniformsDialog : public QDialog {
-public:
-  UniformsDialog(QWidget *parent = 0);
-private:
-  vector<UniformEditor> editors;
-};
-
-static UniformEditor createUniformEditor(string label, string def) {
-  UniformEditor editor;
-
-  editor.label = new QLabel("Set:");
-  editor.edit = new QLineEdit;
-
-  editor.label->setBuddy(editor.edit);
-
-  return editor;
-}
-
-UniformsDialog::UniformsDialog(QWidget *parent): QDialog(parent) {
-  QFormLayout *layout = new QFormLayout;
-
-  for (int i = 0; i < 20; i ++) {
-    UniformEditor e = createUniformEditor("Set 1:", "0");
-    editors.push_back(e);
-    layout->addRow(e.label, e.edit);
-  }
-
-  setLayout(layout);
-}
-
 int main(int argc, char *argv[]) {
-  QApplication app(argc, argv);
-
-  UniformsDialog d;
-  d.setModal(false);
-  d.setWindowFlags(Qt::Tool | Qt::WindowStaysOnTopHint);
-  d.show();
-
   sdlMain();
-
-  return app.exec();
 }
