@@ -137,8 +137,8 @@ void FPSCamera::Think(float dt) {
   if (s) dir.y -= 1;
   if (d) dir.x += 1;
 
-  this->location += dt * forward * dir.y;
-  this->location += dt * right * dir.x;
+  this->location += 2 * dt * forward * dir.y;
+  this->location += 2 * dt * right * dir.x;
 
   this->viewTrans = glm::lookAt(
       this->location, // location of camera

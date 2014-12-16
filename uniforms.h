@@ -24,7 +24,8 @@ const string TEXTURE = "unifTexture";
 const string NUM_TILES = "unifNumTiles";
 const string TILES_TEXTURE = "unifTilesTexture";
 const string LIGHT_DIR = "unifLightDir";
-const string BUFFER = "unifBuffer";
+const string DEPTHS = "unifDepths";
+const string NORMALS = "unifNormals";
 const string RANDOM = "unifRandom";
 
 const vector<string> TRANS_UNIFORMS = {

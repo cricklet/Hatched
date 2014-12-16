@@ -10,15 +10,22 @@ using namespace std;
 
 #include "helper.h"
 
+#ifndef FBO_H_
+#define FBO_H_
+
 class FBO {
  public:
-  FBO(int width, int height, GLuint pixelType = GL_RGB);
+  FBO(int width, int height);
   void BindToShader(GLuint shaderProgram);
   GLuint GetFrameBuffer();
-  int GetTextureIndex();
+  int GetScreenTextureIndex();
+  int GetDepthTextureIndex();
   void Render();
 
  private:
   GLuint fbo, vbo, vao;
-  int textureIndex;
+  int screenTextureIndex;
+  int depthTextureIndex;
 };
+
+#endif

@@ -25,35 +25,44 @@ static GLuint generateVBO() {
   return vbo;
 }
 
-static GLuint generateFBO(int index, int width, int height, GLuint pixelType) {
+static GLuint generateFBO(int screenIndex, int depthIndex, int width, int height) {
   GLuint fbo;
   glGenFramebuffers(1, &fbo);
   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
   checkErrors();
 
-  // Create a texture for use by this framebuffer
-  GLuint fboTexture;
-  glActiveTexture(GL_TEXTURE0 + index);
-  glGenTextures(1, &fboTexture);
-  glBindTexture(GL_TEXTURE_2D, fboTexture);
+  // Create screen texture for use by this framebuffer
+  GLuint screenTexture;
+  glActiveTexture(GL_TEXTURE0 + screenIndex);
+  glGenTextures(1, &screenTexture);
+  glBindTexture(GL_TEXTURE_2D, screenTexture);
   checkErrors();
 
-  glTexImage2D(GL_TEXTURE_2D, 0, pixelType, width, height, 0, pixelType, GL_UNSIGNED_BYTE, NULL /*no data*/);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL /*no data*/);
   checkErrors();
 
-  // Bind the texture to the frambuffer
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fboTexture, 0);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, screenTexture, 0);
   checkErrors();
 
-  // Create a render buffer object for use by this framebuffer
-  GLuint fboRenderBuffer;
-  glGenRenderbuffers(1, &fboRenderBuffer);
-  glBindRenderbuffer(GL_RENDERBUFFER, fboRenderBuffer);
-  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
-  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
-  GL_RENDERBUFFER, fboRenderBuffer);
+  // Create depth texture
+  GLuint depthTexture;
+  glActiveTexture(GL_TEXTURE0 + depthIndex);
+  glGenTextures(1, &depthTexture);
+  glBindTexture(GL_TEXTURE_2D, depthTexture);
+  checkErrors();
+
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+  checkErrors();
+
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTexture, 0);
   checkErrors();
 
   if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
@@ -66,12 +75,13 @@ static GLuint generateFBO(int index, int width, int height, GLuint pixelType) {
   return fbo;
 }
 
-FBO::FBO(int width, int height, GLuint pixelType) {
+FBO::FBO(int width, int height) {
   glGenVertexArrays(1, &this->vao);
   glBindVertexArray(this->vao);
 
-  this->textureIndex = nextTextureIndex();
-  this->fbo = generateFBO(this->textureIndex, width, height, pixelType);
+  this->screenTextureIndex = nextTextureIndex();
+  this->depthTextureIndex = nextTextureIndex();
+  this->fbo = generateFBO(this->screenTextureIndex, this->depthTextureIndex, width, height);
   this->vbo = generateVBO();
 }
 
@@ -94,8 +104,12 @@ GLuint FBO::GetFrameBuffer() {
   return this->fbo;
 }
 
-int FBO::GetTextureIndex() {
-  return this->textureIndex;
+int FBO::GetScreenTextureIndex() {
+  return this->screenTextureIndex;
+}
+
+int FBO::GetDepthTextureIndex() {
+  return this->depthTextureIndex;
 }
 
 void FBO::Render() {

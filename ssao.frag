@@ -2,16 +2,11 @@
 
 in vec2 outVertBufferCoord;
 out vec4 outFragColor;
-uniform sampler2D unifBuffer; // stores normals + depths
+uniform sampler2D unifNormals;
+uniform sampler2D unifDepths;
 uniform sampler2D unifRandom; // stores a texture of random values
 
-const float TOTAL_STRENGTH = 1.0;
-const float BASE = 0.2;
-  
-const float AREA = 0.0075;
-const float FALLOFF = 0.000001;
-
-const float RADIUS = 0.001;
+const float RADIUS = 0.01;
 
 const int SAMPLES = 16;
 const vec3 SAMPLE_SPHERE [SAMPLES] = vec3 [SAMPLES] (
@@ -24,36 +19,55 @@ const vec3 SAMPLE_SPHERE [SAMPLES] = vec3 [SAMPLES] (
   vec3( 0.7119,-0.0154,-0.0918), vec3(-0.0533, 0.0596,-0.5411),
   vec3( 0.0352,-0.0631, 0.5460), vec3(-0.4776, 0.2847,-0.0271));
 
-void main() {
-  vec3 normal = texture(unifBuffer, outVertBufferCoord).rgb;
-  float depth = texture(unifBuffer, outVertBufferCoord).a;
+vec3 getNorm(vec2 pos) {
+  return normalize(2 * texture(unifNormals, pos).rgb - vec3(1,1,1));
+}
 
-  // isometric screenspace coordinate system
-  vec3 position = vec3(outVertBufferCoord, depth);
+float getDepth(vec2 pos) {
+  return texture(unifDepths, pos).r;
+}
+
+void main() {
+  vec2 coord = outVertBufferCoord;
+  vec3 normal = getNorm(coord);
+  float depth = getDepth(coord);
+  vec3 position = vec3(coord, depth);
 
   // the farther the sample, the smaller the sphere of influence
   float radius = RADIUS / depth;
 
   // reflect each sample on a random plane
-  vec3 random = texture(unifRandom, outVertBufferCoord * 4.0).rgb;
+  vec3 randomNormal = texture(unifRandom, coord * mat2x2(12,0,0,8)).xyz;
+  randomNormal = normalize(randomNormal - vec3(0.5,0.5,0.5));
 
-  // let's add up the amount of occlusion!
-  float occlusion = 0.0;
+  float occlusion = 0.0f;
+
+  vec3 averageRay = vec3(0,0,0);
   for (int i = 0; i < SAMPLES; i ++) {
-    vec3 ray = radius * reflect(SAMPLE_SPHERE[i], random);
-    //ray = sign(dot(ray, normal)) * ray;
+    vec3 hemiRay = SAMPLE_SPHERE[i];
+    hemiRay = reflect(hemiRay, randomNormal);
+    hemiRay = radius * hemiRay;
+    hemiRay = sign(dot(hemiRay, normal)) * hemiRay;
 
-    vec3 sample = position + ray;
-    vec2 samplePosition = clamp(sample.xy, 0, 1);
+    vec3 flatRay = hemiRay - dot(hemiRay, normal) * normal;
 
-    float actualDepth = texture(unifBuffer, samplePosition).a;
+    vec3 expectedPosition = position + flatRay;
+    float expectedDepth = expectedPosition.z;
 
-    // (sample > actual) = occluded
-    float difference = depth - actualDepth;
+    vec2 sampleCoord = clamp(expectedPosition.xy, vec2(0,0), vec2(1,1));
+    vec3 sampleNormal = getNorm(sampleCoord);
+    float sampleDepth = getDepth(sampleCoord);
 
-    occlusion += step(FALLOFF, difference) * (1.0 - smoothstep(FALLOFF, AREA, difference));
+    float depthDifference = expectedDepth - sampleDepth; // positive, then occlusion
+    //float normDifference = abs(1.0 - dot(sampleNormal, normal));
+    
+    if (abs(depthDifference) < 0.02) {
+      occlusion += (depthDifference > 0 ? 1.0 : 0.0);
+    }
   }
 
-  float ao = 1.0 - TOTAL_STRENGTH * occlusion * (1.0 / SAMPLES);
-  outFragColor = vec4(ao,0,0, 1);
+  occlusion = 1 - 1.5 * occlusion / SAMPLES;
+
+  //outFragColor = vec4(normal, 1.0);
+  outFragColor = vec4(occlusion, 0, 0, 1.0);
 }

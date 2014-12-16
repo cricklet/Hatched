@@ -27,86 +27,15 @@
 #include "camera.h"
 #include "mesh.h"
 #include "model.h"
+#include "renderer.h"
 #include "fbo.h"
 
 using namespace std;
-
-static int WIDTH = 800, HEIGHT = 600;
 
 static long int getTimeOfDay() {
   struct timeval t;
   gettimeofday(&t, NULL);
   return t.tv_sec * 1000 + t.tv_usec / 1000;
-}
-
-static long int getModifiedTime(string source) {
-  struct stat attrib;
-  stat(source.c_str(), &attrib);
-  return attrib.st_mtime;
-}
-
-static long int getModifiedTime(vector<string> sources) {
-  long int latestTime = 0;
-  for (string source : sources) {
-    long int time = getModifiedTime(source);
-    if (time > latestTime) {
-      latestTime = time;
-    }
-  }
-
-  return latestTime;
-}
-
-static void clearActiveBuffer(float rgb = 1, float a = 1) {
-  glEnable(GL_DEPTH_TEST);
-  glClearColor(rgb, rgb, rgb, a);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-  checkErrors();
-}
-
-static GLuint loadShader(string vertSource, string fragSource) {
-  GLuint shaderProgram = generateShaderProgram(vertSource, fragSource);
-  checkErrors();
-
-  glBindFragDataLocation(shaderProgram, 0, "outFragColor");
-  checkErrors();
-
-  return shaderProgram;
-}
-
-typedef function<void (UniformGetter)> RenderScene;
-typedef function<void (GLuint)> BindScene;
-struct Renderer {
-  vector<string> sources;
-  long int loadTime;
-  function<void (RenderScene)> render;
-  GLuint sceneShader;
-};
-
-static Renderer generateSimpleRenderer() {
-  GLuint shader = loadShader("simple.vert", "simple.frag");
-
-  UniformsMap uniformsMap;
-  addUniforms(uniformsMap, shader, TRANS_UNIFORMS);
-  addUniforms(uniformsMap, shader, COLOR);
-  UniformGetter uniforms = generateUniformGetter(uniformsMap);
-
-  Renderer r;
-  r.sources = {"simple.vert", "simple.frag"};
-  r.sceneShader = shader;
-  r.loadTime = getModifiedTime(r.sources);
-  r.render = [=] (RenderScene renderScene) {
-    glUseProgram(shader);
-
-    clearActiveBuffer();
-    checkErrors();
-
-    // render scene (includes setting up camera)
-    renderScene(uniforms);
-    checkErrors();
-  };
-
-  return r;
 }
 
 static Model *loadNanosuit() {
@@ -140,24 +69,18 @@ static Model *loadCharacter() {
 }
 
 static Model *loadHouse() {
-  Model *model = new Model("models/house/House01.obj");
+  Model *model = new Model("models/sponza/sponza.obj");
   glm::mat4 modelTrans = glm::mat4();
 
   modelTrans = glm::rotate(modelTrans, (float) (M_PI / 2.0), glm::vec3(0, 0, 1));
   modelTrans = glm::rotate(modelTrans, (float) (M_PI / 2.0), glm::vec3(1, 0, 0));
-  float scale = 1.0f / 10;
+
+  float scale = 1.0f / 2;
   modelTrans = glm::scale(modelTrans, glm::vec3(scale, scale, scale));
 
   model->SetTransform(modelTrans);
 
   return model;
-}
-
-static bool shouldUpdateRenderer(Renderer &r) {
-  if (getModifiedTime(r.sources) > r.loadTime) {
-    return true;
-  }
-  return false;
 }
 
 int sdlMain() {
@@ -175,12 +98,12 @@ int sdlMain() {
   glewInit();
   checkErrors();
 
-  //  Camera *camera = new FPSCamera();
-  Camera *camera = new RotationCamera();
+  Camera *camera = new FPSCamera();
+  // Camera *camera = new RotationCamera();
 
-  //  Model *model = loadNanosuit();
-  //  Model *model = loadHouse();
-  Model *model = loadCharacter();
+  // Model *model = loadNanosuit();
+    Model *model = loadHouse();
+  //  Model *model = loadCharacter();
 
   glm::mat4 viewTrans = glm::lookAt(
       glm::vec3(3.0f, 0.0f, 1.0f), // location of camera
@@ -195,7 +118,6 @@ int sdlMain() {
       10.0f  //far
       );
 
-
   auto renderScene = [&] (UniformGetter u) {
     camera->SetupTransforms(u(VIEW_TRANS), u(PROJ_TRANS));
     checkErrors();
@@ -208,11 +130,19 @@ int sdlMain() {
     model->BindToShader(s);
   };
 
-  vector<Renderer> renderers = {
-    generateSimpleRenderer()
+  typedef function<Renderer(void)> Generator;
+  vector<Generator> generators = {
+      generateSimpleRenderer,
+      generateDirLightRenderer,
+      generateHatchedRenderer,
+      generateSSAORenderer,
   };
 
-  for (Renderer r : renderers) {
+  vector<Renderer> renderers;
+
+  for (Generator &generator : generators) {
+    Renderer r = generator();
+    renderers.push_back(r);
     bindScene(r.sceneShader);
   }
 
@@ -249,24 +179,31 @@ int sdlMain() {
       camera->HandleEvent(windowEvent);
     }
 
-    Renderer &r = renderers[rendererIndex];
+    Renderer &renderer = renderers[rendererIndex];
 
     timeTillUpdateRenderer -= dt;
     if (timeTillUpdateRenderer < 0) {
-      if (shouldUpdateRenderer(r)) {
+      if (shouldUpdateRenderer(renderer)) {
         cout << "Attempting to reload renderer\n";
 
-        r = generateSimpleRenderer();
-        bindScene(r.sceneShader);
+        try {
+          Generator &generator = generators[rendererIndex];
+          renderer = generator();
+          bindScene(renderer.sceneShader);
 
-        cout << "Loaded new renderer\n";
+          cout << "Loaded new renderer\n";
+        } catch (runtime_error &e) {
+          cerr << "Couldn't load new renderer...\n";
+        }
       }
       timeTillUpdateRenderer = 1.0f;
     }
 
     camera->Think(dt);
+    checkErrors();
 
-    r.render(renderScene);
+    renderer.render(renderScene);
+    checkErrors();
 
     SDL_GL_SwapWindow(window);
     checkErrors();
