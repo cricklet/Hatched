@@ -22,7 +22,10 @@
 
 #include <QtGui/QApplication>
 #include <QtGui/QDialog>
+#include <QtGui/QLabel>
+#include <QtGui/QLineEdit>
 #include <QtGui/QMessageBox>
+#include <QtGui/QFormLayout>
 #include <QtCore/QThread>
 #include <QtCore/QThreadPool>
 #include <QtCore/QRunnable>
@@ -261,14 +264,6 @@ static Model *loadHouse() {
   return model;
 }
 
-class Runnable: public QRunnable {
-public:
-  Runnable(auto func) {this->func = func; }
-  void run() { func(); }
-private:
-  function<void (void)> func;
-};
-
 int sdlMain() {
   SDL_Init(SDL_INIT_VIDEO);
   SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
@@ -371,15 +366,50 @@ int sdlMain() {
   SDL_Quit();
 }
 
+struct UniformEditor {
+  QLabel *label;
+  QLineEdit *edit;
+};
+
+class UniformsDialog : public QDialog {
+public:
+  UniformsDialog(QWidget *parent = 0);
+private:
+  vector<UniformEditor> editors;
+};
+
+static UniformEditor createUniformEditor(string label, string def) {
+  UniformEditor editor;
+
+  editor.label = new QLabel("Set:");
+  editor.edit = new QLineEdit;
+
+  editor.label->setBuddy(editor.edit);
+
+  return editor;
+}
+
+UniformsDialog::UniformsDialog(QWidget *parent): QDialog(parent) {
+  QFormLayout *layout = new QFormLayout;
+
+  for (int i = 0; i < 20; i ++) {
+    UniformEditor e = createUniformEditor("Set 1:", "0");
+    editors.push_back(e);
+    layout->addRow(e.label, e.edit);
+  }
+
+  setLayout(layout);
+}
+
 int main(int argc, char *argv[]) {
   QApplication app(argc, argv);
 
-  Runnable *runnable = new Runnable([] () { sdlMain(); });
-  QThreadPool *pool = new QThreadPool();
-  pool->start(runnable);
+  UniformsDialog d;
+  d.setModal(false);
+  d.setWindowFlags(Qt::Tool | Qt::WindowStaysOnTopHint);
+  d.show();
 
-  QMessageBox mb(QMessageBox::Question, "blah", "blah", QMessageBox::Ok);
-  mb.exec();
+  sdlMain();
 
   return app.exec();
 }
