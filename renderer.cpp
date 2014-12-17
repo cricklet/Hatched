@@ -38,6 +38,42 @@ bool shouldUpdateRenderer(Renderer &r) {
   }
   return false;
 }
+
+static Renderer generateGenericDeferredRenderer(auto postSetup, auto postRender) {
+  GLuint bufferShader = generateShaderProgram("gbuffer.vert", "gbuffer.frag");
+  checkErrors();
+
+  UniformsMap bufferUniformsMap;
+  addUniforms(bufferUniformsMap, bufferShader, TRANS_UNIFORMS);
+  UniformGetter bufferUniforms = generateUniformGetter(bufferUniformsMap);
+
+  FBO *fbo = FBOFactory("deferred_fbo", WIDTH, HEIGHT);
+  checkErrors();
+
+  postSetup(fbo);
+
+  Renderer r;
+  r.sources = {"gbuffer.vert", "gbuffer.frag"};
+  r.sceneShader = -1;
+  r.loadTime = getModifiedTime(r.sources);
+  r.render = [=] (RenderScene renderScene) {
+    // draw to the frame buffer
+    glUseProgram(bufferShader);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo->GetFrameBuffer());
+    glEnable(GL_DEPTH_TEST);
+    clearActiveBuffer(0,0,0,0, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    checkErrors();
+
+    // render scene (includes setting up camera)
+    renderScene(bufferUniforms);
+    checkErrors();
+
+    postRender(fbo);
+    checkErrors();
+  };
+  return r;
+};
+
 Renderer generateHatchedRenderer() {
   GLuint shader = generateShaderProgram("dir_light.vert", "hatched.frag");
   checkErrors();
@@ -81,13 +117,6 @@ Renderer generateHatchedRenderer() {
 }
 
 Renderer generateDeferredRenderer() {
-  GLuint bufferShader = generateShaderProgram("gbuffer.vert", "gbuffer.frag");
-  checkErrors();
-
-  UniformsMap bufferUniformsMap;
-  addUniforms(bufferUniformsMap, bufferShader, TRANS_UNIFORMS);
-  UniformGetter bufferUniforms = generateUniformGetter(bufferUniformsMap);
-
   GLuint lightShader = generateShaderProgram("render_buffer.vert", "deferred_dirlight.frag");
 
   UniformsMap lightUniformsMap;
@@ -99,30 +128,16 @@ Renderer generateDeferredRenderer() {
   UniformGetter lightUniforms = generateUniformGetter(lightUniformsMap);
   checkErrors();
 
-  FBO *fbo = FBOFactory("deferred_fbo", WIDTH, HEIGHT);
-  fbo->BindToShader(lightShader);
-  checkErrors();
+  auto postSetup = [=] (FBO *fbo) {
+    fbo->BindToShader(lightShader);
+  };
 
-  Renderer r;
-  r.sources = {"gbuffer.vert", "gbuffer.frag", "render_buffer.vert", "deferred_dirlight.frag"};
-  r.sceneShader = bufferShader;
-  r.loadTime = getModifiedTime(r.sources);
-  r.render = [=] (RenderScene renderScene) {
-    // draw to the frame buffer
-    glUseProgram(bufferShader);
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo->GetFrameBuffer());
-    glEnable(GL_DEPTH_TEST);
-    clearActiveBuffer(0,0,0,0, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    checkErrors();
-
-    // render scene (includes setting up camera)
-    renderScene(bufferUniforms);
-    checkErrors();
-
+  auto postRender = [=] (FBO *fbo) {
     // draw the frame buffer to the screen
     glUseProgram(lightShader);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     clearActiveBuffer(0,0,0,0, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    checkErrors();
 
     // setup lighting
     glm::vec3 lightDir = glm::vec3(-1,-1,-1);
@@ -137,6 +152,9 @@ Renderer generateDeferredRenderer() {
     checkErrors();
   };
 
+  Renderer r = generateGenericDeferredRenderer(postSetup, postRender);
+  r.sources.push_back("render_buffer.vert");
+  r.sources.push_back("deferred_dirlight.frag");
   return r;
 }
 

@@ -29,6 +29,7 @@ void Mesh::BindToShader(GLuint shaderProgram) {
   glUseProgram(shaderProgram);
   glBindVertexArray(this->vao);
   glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
+  checkErrors();
 
   GLuint vertexStride = sizeof(Vertex);
 
