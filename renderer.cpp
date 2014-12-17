@@ -173,7 +173,7 @@ Renderer generateSSAORenderer() {
   UniformGetter frameUniforms = generateUniformGetter(frameUniformsMap);
   checkErrors();
 
-  Texture noiseTexture = createTexture("noise.png");
+  Texture noiseTexture = createTexture("normal_noise.png");
   checkErrors();
 
   FBO *normalsFBO = new FBO(WIDTH, HEIGHT);
