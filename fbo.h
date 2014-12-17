@@ -14,21 +14,21 @@ using namespace std;
 #ifndef FBO_H_
 #define FBO_H_
 
+const int NUM_ATTACHMENTS = 3;
+
 class FBO {
  public:
   FBO(int width, int height);
   ~FBO();
   void BindToShader(GLuint shaderProgram);
   GLuint GetFrameBuffer();
-  Texture GetAttachment0();
-  Texture GetAttachment1();
+  Texture GetAttachment(int i);
   Texture GetDepth();
   void Render();
 
  private:
   GLuint fbo, vbo, vao;
-  Texture attachment0;
-  Texture attachment1;
+  Texture attachments[NUM_ATTACHMENTS];
   Texture depth;
 };
 

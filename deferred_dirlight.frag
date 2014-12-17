@@ -6,6 +6,7 @@ out vec4 outFragColor;
 
 uniform sampler2D unifPositions;
 uniform sampler2D unifNormals;
+uniform sampler2D unifUVs;
 uniform sampler2D unifDepths;
 
 uniform vec3 unifLightDir;

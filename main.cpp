@@ -99,24 +99,24 @@ int sdlMain() {
   checkErrors();
 
   Camera *camera = new FPSCamera();
-//   Camera *camera = new RotationCamera();
+  //   Camera *camera = new RotationCamera();
 
   // Model *model = loadNanosuit();
-    Model *model = loadHouse();
-//    Model *model = loadCharacter();
+  Model *model = loadHouse();
+  //    Model *model = loadCharacter();
 
   glm::mat4 viewTrans = glm::lookAt(
       glm::vec3(3.0f, 0.0f, 1.0f), // location of camera
       glm::vec3(0, 0, 0), // look at
       glm::vec3(0, 0, 1)  // camera up vector
-      );
+  );
 
   glm::mat4 projTrans = glm::perspective(
       45.0f, // fov y
       (float) WIDTH / HEIGHT, // aspect
       0.2f,  // near
       10.0f  //far
-      );
+  );
 
   auto renderScene = [&] (UniformGetter u) {
     camera->SetupTransforms(u(VIEW_TRANS), u(PROJ_TRANS));

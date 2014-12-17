@@ -55,29 +55,30 @@ FBO::FBO(int width, int height) {
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
   checkErrors();
 
-  // Create attachment 0 texture
-  this->attachment0 = createTexture();
-  this->attachment1 = createTexture();
+  // Create textures
+  for (int i = 0; i < NUM_ATTACHMENTS; i ++) {
+    this->attachments[i] = createTexture();
+  }
   this->depth = createTexture();
   checkErrors();
 
-  glBindTexture(GL_TEXTURE_2D, this->attachment0.texture);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL /*no data*/);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, this->attachment0.texture, 0);
-  checkErrors();
+  // Bind textures to frame buffer
+  GLuint drawBuffers[NUM_ATTACHMENTS];
+  for (int i = 0; i < NUM_ATTACHMENTS; i ++) {
+    GLuint texture = this->attachments[i].texture;
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL /*no data*/);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, texture, 0);
+    checkErrors();
 
-  glBindTexture(GL_TEXTURE_2D, this->attachment1.texture);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL /*no data*/);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, this->attachment1.texture, 0);
-  checkErrors();
+    drawBuffers[i] = GL_COLOR_ATTACHMENT0 + i;
+  }
+  glDrawBuffers(3, drawBuffers);
 
   glBindTexture(GL_TEXTURE_2D, this->depth.texture);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL /*no data*/);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, this->depth.texture, 0);
   checkErrors();
-
-  GLuint attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-  glDrawBuffers(2,  attachments);
 
   if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
     std::cerr << "glCheckF ramebufferStatus() failed\n";
@@ -112,12 +113,8 @@ GLuint FBO::GetFrameBuffer() {
   return this->fbo;
 }
 
-Texture FBO::GetAttachment0 () {
-  return this->attachment0;
-}
-
-Texture FBO::GetAttachment1 () {
-  return this->attachment1;
+Texture FBO::GetAttachment (int i) {
+  return this->attachments[i];
 }
 
 Texture FBO::GetDepth() {

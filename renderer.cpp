@@ -94,6 +94,7 @@ Renderer generateDeferredRenderer() {
   addUniforms(lightUniformsMap, lightShader, POSITIONS);
   addUniforms(lightUniformsMap, lightShader, NORMALS);
   addUniforms(lightUniformsMap, lightShader, DEPTHS);
+  addUniforms(lightUniformsMap, lightShader, UVS);
   addUniforms(lightUniformsMap, lightShader, LIGHT_DIR);
   UniformGetter lightUniforms = generateUniformGetter(lightUniformsMap);
   checkErrors();
@@ -126,9 +127,9 @@ Renderer generateDeferredRenderer() {
     // setup lighting
     glm::vec3 lightDir = glm::vec3(-1,-1,-1);
     glUniform3fv(lightUniforms(LIGHT_DIR), 1, glm::value_ptr(lightDir));
-
-    glUniform1i(lightUniforms(POSITIONS), fbo->GetAttachment0().index);
-    glUniform1i(lightUniforms(NORMALS), fbo->GetAttachment1().index);
+    glUniform1i(lightUniforms(POSITIONS), fbo->GetAttachment(0).index);
+    glUniform1i(lightUniforms(NORMALS), fbo->GetAttachment(1).index);
+    glUniform1i(lightUniforms(UVS), fbo->GetAttachment(2).index);
     glUniform1i(lightUniforms(DEPTHS), fbo->GetDepth().index);
     checkErrors();
 
@@ -185,7 +186,7 @@ Renderer generateSSAORenderer() {
     clearActiveBuffer(0,0,0,0, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glUniform1i(frameUniforms(RANDOM), noiseTexture.index);
-    glUniform1i(frameUniforms(NORMALS), fbo->GetAttachment0().index);
+    glUniform1i(frameUniforms(NORMALS), fbo->GetAttachment(0).index);
     glUniform1i(frameUniforms(DEPTHS), fbo->GetDepth().index);
     checkErrors();
 

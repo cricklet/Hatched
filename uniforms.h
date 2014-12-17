@@ -27,6 +27,7 @@ const string LIGHT_DIR = "unifLightDir";
 const string DEPTHS = "unifDepths";
 const string POSITIONS = "unifPositions";
 const string NORMALS = "unifNormals";
+const string UVS = "unifUVs";
 const string RANDOM = "unifRandom";
 
 const vector<string> TRANS_UNIFORMS = {
