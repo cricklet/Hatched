@@ -1,5 +1,6 @@
 #include "renderer.h"
 #include "fbo.h"
+#include "textures.h"
 
 static long int getModifiedTime(string source) {
   struct stat attrib;
@@ -85,9 +86,7 @@ Renderer generateDirLightRenderer() {
   addUniforms(uniformsMap, shader, LIGHT_DIR);
   UniformGetter uniforms = generateUniformGetter(uniformsMap);
 
-  string gridSource = "grid.png";
-  int gridIndex = nextTextureIndex();
-  GLuint gridTexture = loadTexture(gridSource, gridIndex);
+  Texture gridTexture = createTexture("grid.png");
   checkErrors();
 
   Renderer r;
@@ -109,7 +108,7 @@ Renderer generateDirLightRenderer() {
 
     // render a test texture
     glUniform1i(uniforms(USE_TEXTURE), 1);
-    glUniform1i(uniforms(TEXTURE), gridIndex);
+    glUniform1i(uniforms(TEXTURE), gridTexture.index);
     checkErrors();
 
     // render scene (includes setting up camera)
@@ -129,10 +128,8 @@ Renderer generateHatchedRenderer() {
   addUniforms(uniformsMap, shader, LIGHT_DIR);
   UniformGetter uniforms = generateUniformGetter(uniformsMap);
 
-  string tilesSource = "tiled_hatches.png";
   int tilesNum = 6;
-  int tilesIndex = nextTextureIndex();
-  GLuint tilesTexture = loadTexture(tilesSource, tilesIndex);
+  Texture tilesTexture = createTexture("tiled_hatches.png");
   checkErrors();
 
   Renderer r;
@@ -152,7 +149,7 @@ Renderer generateHatchedRenderer() {
 
     // render hatched tiles texture
     glUniform1i(uniforms(NUM_TILES), tilesNum);
-    glUniform1i(uniforms(TILES_TEXTURE), tilesIndex);
+    glUniform1i(uniforms(TILES_TEXTURE), tilesTexture.index);
 
     // render scene (includes setting up camera)
     renderScene(uniforms);
@@ -176,11 +173,8 @@ Renderer generateSSAORenderer() {
   UniformGetter frameUniforms = generateUniformGetter(frameUniformsMap);
   checkErrors();
 
-  cout << "SSAO Renderer:\n";
-  printUniforms(frameUniformsMap);
-
-  int noiseIndex = nextTextureIndex();
-  GLuint noiseTexture = loadTexture("noise.png", noiseIndex);
+  Texture noiseTexture = createTexture("noise.png");
+  checkErrors();
 
   FBO *normalsFBO = new FBO(WIDTH, HEIGHT);
   normalsFBO->BindToShader(frameShader);
@@ -207,7 +201,7 @@ Renderer generateSSAORenderer() {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     clearActiveBuffer(0,0,0,0, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glUniform1i(frameUniforms(RANDOM), noiseIndex);
+    glUniform1i(frameUniforms(RANDOM), noiseTexture.index);
     glUniform1i(frameUniforms(NORMALS), normalsFBO->GetScreenTextureIndex());
     glUniform1i(frameUniforms(DEPTHS), normalsFBO->GetDepthTextureIndex());
     checkErrors();

@@ -10,7 +10,7 @@ uniform sampler2D unifTexture;
 uniform bool unifUseTexture;
 
 void main() {
-  if (unifUseTexture) {
+  if (!unifUseTexture) {
     outFragColor = outVertLighting * texture(unifTexture, outVertUV);
   } else {
     outFragColor = outVertLighting * vec4(unifColor, 1.0);

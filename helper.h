@@ -20,8 +20,4 @@ bool _checkErrors(const char *filename, int line);
 
 GLuint generateShaderProgram(string vertSource, string fragSource);
 
-GLuint loadTexture(string filename, int index);
-
-int nextTextureIndex();
-
 #endif

@@ -1,4 +1,5 @@
 #include "fbo.h"
+#include "textures.h"
 
 static GLfloat vertices[] = {
     -1, -1, 0, 0,
