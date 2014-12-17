@@ -45,8 +45,8 @@ float getDepth(vec2 pos) {
 vec3 getNorm(vec2 pos) {
   float depth = getDepth(pos);
 
-  const vec2 offset1 = vec2(0.0,0.001);
-  const vec2 offset2 = vec2(0.001,0.0);
+  const vec2 offset1 = vec2(-0.0001,0.0001);
+  const vec2 offset2 = vec2(0.0001,0.0001);
   
   float depth1 = getDepth(pos + offset1);
   float depth2 = getDepth(pos + offset2);
@@ -102,7 +102,7 @@ void main() {
     vec2 actualCoord = clamp(expectedPosition.xy, vec2(0,0), vec2(1,1));
     float actualDepth = getDepth(actualCoord);
 
-    if (abs(actualDepth - depth) < 0.01) {
+    if (abs(actualDepth - depth) < 0.001) {
       if (actualDepth <= expectedDepth) {
 	occlusion += 1.0;
       }

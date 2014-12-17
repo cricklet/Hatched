@@ -99,11 +99,11 @@ int sdlMain() {
   checkErrors();
 
   Camera *camera = new FPSCamera();
-  // Camera *camera = new RotationCamera();
+//   Camera *camera = new RotationCamera();
 
   // Model *model = loadNanosuit();
     Model *model = loadHouse();
-  //  Model *model = loadCharacter();
+//    Model *model = loadCharacter();
 
   glm::mat4 viewTrans = glm::lookAt(
       glm::vec3(3.0f, 0.0f, 1.0f), // location of camera
@@ -132,8 +132,7 @@ int sdlMain() {
 
   typedef function<Renderer(void)> Generator;
   vector<Generator> generators = {
-      generateSimpleRenderer,
-      generateDirLightRenderer,
+      generateDeferredRenderer,
       generateHatchedRenderer,
       generateSSAORenderer,
   };

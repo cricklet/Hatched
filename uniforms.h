@@ -25,6 +25,7 @@ const string NUM_TILES = "unifNumTiles";
 const string TILES_TEXTURE = "unifTilesTexture";
 const string LIGHT_DIR = "unifLightDir";
 const string DEPTHS = "unifDepths";
+const string POSITIONS = "unifPositions";
 const string NORMALS = "unifNormals";
 const string RANDOM = "unifRandom";
 

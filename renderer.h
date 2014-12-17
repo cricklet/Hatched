@@ -37,9 +37,8 @@ struct Renderer {
   GLuint sceneShader;
 };
 
-Renderer generateSimpleRenderer();
-Renderer generateDirLightRenderer();
 Renderer generateHatchedRenderer();
+Renderer generateDeferredRenderer();
 Renderer generateSSAORenderer();
 bool shouldUpdateRenderer(Renderer &r);
 

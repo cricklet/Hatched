@@ -30,23 +30,41 @@ static GLuint loadTexture(const char *filename, int index) {
 
 static map<string, Texture> cache;
 
-Texture createTexture(string filename) {
+static Texture createTextureFromFile(string filename) {
   if (cache.find(filename) != cache.end()) {
     return cache[filename];
   }
 
   Texture t;
   t.index = nextTextureIndex();
-
-  if (filename.length() > 0) {
-    t.texture = loadTexture(filename.c_str(), t.index);
-  } else {
-    t.texture = -1;
-  }
+  t.texture = loadTexture(filename.c_str(), t.index);
 
   cache[filename] = t;
 
   return t;
+}
+
+static Texture createTextureBlank() {
+  Texture t;
+  t.index = nextTextureIndex();
+
+  glActiveTexture(GL_TEXTURE0 + t.index);
+  glGenTextures(1, &t.texture);
+  glBindTexture(GL_TEXTURE_2D, t.texture);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+  return t;
+}
+
+Texture createTexture(string filename) {
+  if (filename.length() > 0) {
+    return createTextureFromFile(filename);
+  } else {
+    return createTextureBlank();
+  }
 }
 
 

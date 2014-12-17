@@ -9,6 +9,7 @@
 using namespace std;
 
 #include "helper.h"
+#include "textures.h"
 
 #ifndef FBO_H_
 #define FBO_H_
@@ -16,16 +17,21 @@ using namespace std;
 class FBO {
  public:
   FBO(int width, int height);
+  ~FBO();
   void BindToShader(GLuint shaderProgram);
   GLuint GetFrameBuffer();
-  int GetScreenTextureIndex();
-  int GetDepthTextureIndex();
+  Texture GetAttachment0();
+  Texture GetAttachment1();
+  Texture GetDepth();
   void Render();
 
  private:
   GLuint fbo, vbo, vao;
-  int screenTextureIndex;
-  int depthTextureIndex;
+  Texture attachment0;
+  Texture attachment1;
+  Texture depth;
 };
+
+FBO *FBOFactory(string id, int width, int height);
 
 #endif

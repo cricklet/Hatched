@@ -16,74 +16,81 @@ static void *positionOffset = 0;
 static void *coordOffset = (void *) (2 * sizeof(GLfloat));
 static int numElements = 6;
 
-static GLuint generateVBO() {
-  GLuint vbo;
-  glGenBuffers(1, &vbo);
-  glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-  checkErrors();
+static void printStatus() {
+  int res, i = 0;
+  GLint buffer;
 
-  return vbo;
-}
+  do {
+    glGetIntegerv(GL_DRAW_BUFFER0+i, &buffer);
 
-static GLuint generateFBO(int screenIndex, int depthIndex, int width, int height) {
-  GLuint fbo;
-  glGenFramebuffers(1, &fbo);
-  glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-  checkErrors();
+    if (buffer != GL_NONE) {
 
-  // Create screen texture for use by this framebuffer
-  GLuint screenTexture;
-  glActiveTexture(GL_TEXTURE0 + screenIndex);
-  glGenTextures(1, &screenTexture);
-  glBindTexture(GL_TEXTURE_2D, screenTexture);
-  checkErrors();
+      printf("Shader Output Location %d - color attachment %d\n",
+          i, buffer - GL_COLOR_ATTACHMENT0);
 
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL /*no data*/);
-  checkErrors();
+      glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, buffer,
+          GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, &res);
+      printf("\tAttachment Type: %s\n",
+          res==GL_TEXTURE?"Texture":"Render Buffer");
+      glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, buffer,
+          GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME, &res);
+      printf("\tAttachment object name: %d\n",res);
+    }
+    ++i;
 
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, screenTexture, 0);
-  checkErrors();
-
-  // Create depth texture
-  GLuint depthTexture;
-  glActiveTexture(GL_TEXTURE0 + depthIndex);
-  glGenTextures(1, &depthTexture);
-  glBindTexture(GL_TEXTURE_2D, depthTexture);
-  checkErrors();
-
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
-  checkErrors();
-
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTexture, 0);
-  checkErrors();
-
-  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-    std::cerr << "glCheckF ramebufferStatus() failed\n";
-  }
-
-  // Return to rendering to the default framebuffer (the screen)
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-  return fbo;
+  } while (buffer != GL_NONE);
 }
 
 FBO::FBO(int width, int height) {
   glGenVertexArrays(1, &this->vao);
   glBindVertexArray(this->vao);
+  checkErrors();
 
-  this->screenTextureIndex = nextTextureIndex();
-  this->depthTextureIndex = nextTextureIndex();
-  this->fbo = generateFBO(this->screenTextureIndex, this->depthTextureIndex, width, height);
-  this->vbo = generateVBO();
+  glGenFramebuffers(1, &this->fbo);
+  glBindFramebuffer(GL_FRAMEBUFFER, this->fbo);
+  checkErrors();
+
+  glGenBuffers(1, &this->vbo);
+  glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+  checkErrors();
+
+  // Create attachment 0 texture
+  this->attachment0 = createTexture();
+  this->attachment1 = createTexture();
+  this->depth = createTexture();
+  checkErrors();
+
+  glBindTexture(GL_TEXTURE_2D, this->attachment0.texture);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL /*no data*/);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, this->attachment0.texture, 0);
+  checkErrors();
+
+  glBindTexture(GL_TEXTURE_2D, this->attachment1.texture);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL /*no data*/);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, this->attachment1.texture, 0);
+  checkErrors();
+
+  glBindTexture(GL_TEXTURE_2D, this->depth.texture);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL /*no data*/);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, this->depth.texture, 0);
+  checkErrors();
+
+  GLuint attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+  glDrawBuffers(2,  attachments);
+
+  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+    std::cerr << "glCheckF ramebufferStatus() failed\n";
+  }
+
+  printStatus();
+
+  // Return to rendering to the default framebuffer (the screen)
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  checkErrors();
+}
+
+FBO::~FBO() {
 }
 
 void FBO::BindToShader(GLuint shaderProgram) {
@@ -105,12 +112,16 @@ GLuint FBO::GetFrameBuffer() {
   return this->fbo;
 }
 
-int FBO::GetScreenTextureIndex() {
-  return this->screenTextureIndex;
+Texture FBO::GetAttachment0 () {
+  return this->attachment0;
 }
 
-int FBO::GetDepthTextureIndex() {
-  return this->depthTextureIndex;
+Texture FBO::GetAttachment1 () {
+  return this->attachment1;
+}
+
+Texture FBO::GetDepth() {
+  return this->depth;
 }
 
 void FBO::Render() {
@@ -124,3 +135,13 @@ void FBO::Render() {
   glDrawArrays(GL_TRIANGLES, 0, numElements);
 }
 
+static map<string, FBO *> cache;
+FBO *FBOFactory(string id, int width, int height) {
+  if (cache.find(id) != cache.end()) {
+    return cache[id];
+  }
+
+  FBO *f = new FBO(width, height);
+  cache[id] = f;
+  return f;
+}
