@@ -132,8 +132,8 @@ int sdlMain() {
 
   typedef function<Renderer(void)> Generator;
   vector<Generator> generators = {
-      generateDeferredRenderer,
-      generateHatchedRenderer,
+      //generateDeferredRenderer,
+      //generateHatchedRenderer,
       generateSSAORenderer,
   };
 

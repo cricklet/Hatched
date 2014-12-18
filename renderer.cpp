@@ -39,41 +39,68 @@ bool shouldUpdateRenderer(Renderer &r) {
   return false;
 }
 Renderer generateHatchedRenderer() {
-  GLuint shader = generateShaderProgram("dir_light.vert", "hatched.frag");
+  GLuint bufferShader = generateShaderProgram("gbuffer.vert", "gbuffer.frag");
   checkErrors();
 
-  UniformsMap uniformsMap;
-  addUniforms(uniformsMap, shader, TRANS_UNIFORMS);
-  addUniforms(uniformsMap, shader, COLOR);
-  addUniforms(uniformsMap, shader, TILE_UNIFORMS);
-  addUniforms(uniformsMap, shader, LIGHT_DIR);
-  UniformGetter uniforms = generateUniformGetter(uniformsMap);
+  UniformsMap bufferUniformsMap;
+  addUniforms(bufferUniformsMap, bufferShader, TRANS_UNIFORMS);
+  UniformGetter bufferUniforms = generateUniformGetter(bufferUniformsMap);
+
+  GLuint hatchedShader = generateShaderProgram("render_buffer.vert", "deferred_hatched.frag");
+
+  UniformsMap hatchedUniformsMap;
+  addUniforms(hatchedUniformsMap, hatchedShader, POSITIONS);
+  addUniforms(hatchedUniformsMap, hatchedShader, NORMALS);
+  addUniforms(hatchedUniformsMap, hatchedShader, DEPTHS);
+  addUniforms(hatchedUniformsMap, hatchedShader, UVS);
+  addUniforms(hatchedUniformsMap, hatchedShader, LIGHT_DIR);
+  addUniforms(hatchedUniformsMap, hatchedShader, TILE_UNIFORMS);
+  UniformGetter hatchedUniforms = generateUniformGetter(hatchedUniformsMap);
+  checkErrors();
 
   int tilesNum = 6;
   Texture tilesTexture = createTexture("tiled_hatches.png");
   checkErrors();
 
+  FBO *fbo = FBOFactory("hatched_fbo", WIDTH, HEIGHT);
+  fbo->BindToShader(hatchedShader);
+  checkErrors();
+
   Renderer r;
-  r.sources = {"dir_light.vert", "hatched.frag"};
-  r.sceneShader = shader;
+  r.sources = {"gbuffer.vert", "gbuffer.frag", "render_buffer.vert", "deferred_dirlight.frag"};
+  r.sceneShader = bufferShader;
   r.loadTime = getModifiedTime(r.sources);
   r.render = [=] (RenderScene renderScene) {
-    glUseProgram(shader);
+    // draw to the frame buffer
+    glUseProgram(bufferShader);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo->GetFrameBuffer());
     glEnable(GL_DEPTH_TEST);
-    clearActiveBuffer();
+    clearActiveBuffer(0,0,0,0, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     checkErrors();
+
+    // render scene (includes setting up camera)
+    renderScene(bufferUniforms);
+    checkErrors();
+
+    // draw the frame buffer to the screen
+    glUseProgram(hatchedShader);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    clearActiveBuffer(0,0,0,0, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // setup lighting
     glm::vec3 lightDir = glm::vec3(-1,-1,-1);
-    // lightDir = glm::rotate(lightDir, time, glm::vec3(0,0,1));
-    glUniform3fv(uniforms(LIGHT_DIR), 1, glm::value_ptr(lightDir));
+    glUniform3fv(hatchedUniforms(LIGHT_DIR), 1, glm::value_ptr(lightDir));
 
-    // render hatched tiles texture
-    glUniform1i(uniforms(NUM_TILES), tilesNum);
-    glUniform1i(uniforms(TILES_TEXTURE), tilesTexture.index);
+    glUniform1i(hatchedUniforms(NUM_TILES), tilesNum);
+    glUniform1i(hatchedUniforms(TILES_TEXTURE), tilesTexture.index);
 
-    // render scene (includes setting up camera)
-    renderScene(uniforms);
+    glUniform1i(hatchedUniforms(POSITIONS), fbo->GetAttachment(0).index);
+    glUniform1i(hatchedUniforms(NORMALS), fbo->GetAttachment(1).index);
+    glUniform1i(hatchedUniforms(UVS), fbo->GetAttachment(2).index);
+    glUniform1i(hatchedUniforms(DEPTHS), fbo->GetDepth().index);
+    checkErrors();
+
+    fbo->Render();
     checkErrors();
   };
 
@@ -141,53 +168,65 @@ Renderer generateDeferredRenderer() {
 }
 
 Renderer generateSSAORenderer() {
-  GLuint normalsShader = generateShaderProgram("normals.vert", "normals.frag");
+  GLuint bufferShader = generateShaderProgram("gbuffer.vert", "gbuffer.frag");
   checkErrors();
 
-  UniformsMap normalsUniformsMap;
-  addUniforms(normalsUniformsMap, normalsShader, TRANS_UNIFORMS);
-  UniformGetter normalsUniforms = generateUniformGetter(normalsUniformsMap);
+  UniformsMap bufferUniformsMap;
+  addUniforms(bufferUniformsMap, bufferShader, TRANS_UNIFORMS);
+  UniformGetter bufferUniforms = generateUniformGetter(bufferUniformsMap);
 
-  GLuint frameShader = generateShaderProgram("render_buffer.vert", "ssao.frag");
+  GLuint hatchedShader = generateShaderProgram("render_buffer.vert", "deferred_ssao.frag");
 
-  UniformsMap frameUniformsMap;
-  addUniforms(frameUniformsMap, frameShader, DEPTHS);
-  addUniforms(frameUniformsMap, frameShader, NORMALS);
-  addUniforms(frameUniformsMap, frameShader, RANDOM);
-  UniformGetter frameUniforms = generateUniformGetter(frameUniformsMap);
+  UniformsMap hatchedUniformsMap;
+  addUniforms(hatchedUniformsMap, hatchedShader, POSITIONS);
+  addUniforms(hatchedUniformsMap, hatchedShader, NORMALS);
+  addUniforms(hatchedUniformsMap, hatchedShader, DEPTHS);
+  addUniforms(hatchedUniformsMap, hatchedShader, UVS);
+  addUniforms(hatchedUniformsMap, hatchedShader, LIGHT_DIR);
+  addUniforms(hatchedUniformsMap, hatchedShader, TILE_UNIFORMS);
+  UniformGetter hatchedUniforms = generateUniformGetter(hatchedUniformsMap);
   checkErrors();
 
-  Texture noiseTexture = createTexture("noise.png");
+  int tilesNum = 6;
+  Texture tilesTexture = createTexture("tiled_hatches.png");
   checkErrors();
 
-  FBO *fbo = FBOFactory("ssao_fbo", WIDTH, HEIGHT);
-  fbo->BindToShader(frameShader);
+  FBO *fbo = FBOFactory("hatched_fbo", WIDTH, HEIGHT);
+  fbo->BindToShader(hatchedShader);
   checkErrors();
 
   Renderer r;
-  r.sources = {"normals.vert", "normals.frag", "render_buffer.vert", "ssao.frag"};
-  r.sceneShader = normalsShader;
+  r.sources = {"gbuffer.vert", "gbuffer.frag", "render_buffer.vert", "deferred_dirlight.frag"};
+  r.sceneShader = bufferShader;
   r.loadTime = getModifiedTime(r.sources);
   r.render = [=] (RenderScene renderScene) {
     // draw to the frame buffer
-    glUseProgram(normalsShader);
+    glUseProgram(bufferShader);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo->GetFrameBuffer());
     glEnable(GL_DEPTH_TEST);
     clearActiveBuffer(0,0,0,0, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     checkErrors();
 
     // render scene (includes setting up camera)
-    renderScene(normalsUniforms);
+    renderScene(bufferUniforms);
     checkErrors();
 
     // draw the frame buffer to the screen
-    glUseProgram(frameShader);
+    glUseProgram(hatchedShader);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     clearActiveBuffer(0,0,0,0, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glUniform1i(frameUniforms(RANDOM), noiseTexture.index);
-    glUniform1i(frameUniforms(NORMALS), fbo->GetAttachment(0).index);
-    glUniform1i(frameUniforms(DEPTHS), fbo->GetDepth().index);
+    // setup lighting
+    glm::vec3 lightDir = glm::vec3(-1,-1,-1);
+    glUniform3fv(hatchedUniforms(LIGHT_DIR), 1, glm::value_ptr(lightDir));
+
+    glUniform1i(hatchedUniforms(NUM_TILES), tilesNum);
+    glUniform1i(hatchedUniforms(TILES_TEXTURE), tilesTexture.index);
+
+    glUniform1i(hatchedUniforms(POSITIONS), fbo->GetAttachment(0).index);
+    glUniform1i(hatchedUniforms(NORMALS), fbo->GetAttachment(1).index);
+    glUniform1i(hatchedUniforms(UVS), fbo->GetAttachment(2).index);
+    glUniform1i(hatchedUniforms(DEPTHS), fbo->GetDepth().index);
     checkErrors();
 
     fbo->Render();
