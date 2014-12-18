@@ -33,10 +33,8 @@ typedef function<void(GLuint)> BindScene;
 struct Renderer {
   vector<string> sources;
   long int loadTime;
-  GLuint sceneShader;
-
   function<void(RenderScene)> render;
-  function<void(void)> cleanup;
+  GLuint sceneShader;
 };
 
 Renderer generateHatchedRenderer();
