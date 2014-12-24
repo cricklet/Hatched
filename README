@@ -1,0 +1,9 @@
+Going to try tracking my tasks here rather than in Trello. This will allow me to commit changes to this list and then get real stats on how long each feature takes me to implement!
+
+/ = current
+X = done
+(1) = hour estimate
+(2/1) = actual time
+
+[ ] Implement destructors for everything (2)
+[ ] Move renderer into OOP
