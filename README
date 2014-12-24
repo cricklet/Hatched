@@ -5,5 +5,5 @@ X = done
 (1) = hour estimate
 (2/1) = actual time
 
-[ ] Implement destructors for everything (2)
+[\] Implement destructors for everything (2)
 [ ] Move renderer into OOP
