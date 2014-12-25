@@ -28,18 +28,26 @@ using namespace std;
 #ifndef RENDERER_H_
 #define RENDERER_H_
 
-typedef function<void(UniformGetter)> RenderScene;
+typedef function<void(Uniforms)> RenderScene;
 typedef function<void(GLuint)> BindScene;
-struct Renderer {
+
+class Renderer {
+public:
+  Renderer(
+      vector<string> s,
+      function<void(RenderScene)> r,
+      long int t
+  );
+  bool ShouldUpdate();
+  function<void(RenderScene)> Render;
+
+private:
   vector<string> sources;
   long int loadTime;
-  function<void(RenderScene)> render;
-  GLuint sceneShader;
 };
 
-Renderer generateHatchedRenderer();
-Renderer generateDeferredRenderer();
-Renderer generateSSAORenderer();
-bool shouldUpdateRenderer(Renderer &r);
+Renderer generateHatchedRenderer(BindScene bindScene);
+//Renderer generateDeferredRenderer();
+//Renderer generateSSAORenderer();
 
 #endif

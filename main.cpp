@@ -126,19 +126,18 @@ int sdlMain() {
     model.BindToShader(s);
   };
 
-  typedef function<Renderer(void)> Generator;
+  typedef function<Renderer(BindScene)> Generator;
   vector<Generator> generators = {
-      //generateDeferredRenderer,
-      //generateHatchedRenderer,
-      generateSSAORenderer,
+      // generateDeferredRenderer,
+      generateHatchedRenderer,
+      // generateSSAORenderer,
   };
 
   vector<Renderer> renderers;
 
   for (Generator &generator : generators) {
-    Renderer r = generator();
+    Renderer r = generator(bindScene);
     renderers.push_back(r);
-    bindScene(r.sceneShader);
   }
 
   int rendererIndex = 0;
@@ -178,13 +177,12 @@ int sdlMain() {
 
     timeTillUpdateRenderer -= dt;
     if (timeTillUpdateRenderer < 0) {
-      if (shouldUpdateRenderer(renderer)) {
+      if (renderer.ShouldUpdate()) {
         cout << "Attempting to reload renderer\n";
 
         try {
           Generator &generator = generators[rendererIndex];
-          renderer = generator();
-          bindScene(renderer.sceneShader);
+          renderer = generator(bindScene);
 
           cout << "Loaded new renderer\n";
         } catch (runtime_error &e) {
@@ -197,7 +195,7 @@ int sdlMain() {
     camera.Think(dt);
     checkErrors();
 
-    renderer.render(renderScene);
+    renderer.Render(renderScene);
     checkErrors();
 
     SDL_GL_SwapWindow(window);
