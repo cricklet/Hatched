@@ -89,16 +89,12 @@ FBO::FBO(int width, int height) {
   // Return to rendering to the default framebuffer (the screen)
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   checkErrors();
-
-  cout << "Create FBO\n";
 }
 
 FBO::~FBO() {
   glDeleteBuffers(1, &this->fbo);
   glDeleteBuffers(1, &this->vbo);
   glDeleteBuffers(1, &this->vao);
-
-  cout << "Destroy FBO\n";
 }
 
 void FBO::BindToShader(GLuint shaderProgram) {

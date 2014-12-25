@@ -38,7 +38,6 @@ class RotationCamera : public Camera {
 class FPSCamera : public Camera {
  public:
   FPSCamera();
-  ~FPSCamera();
 
   void SetupTransforms(GLint viewTransUniform, GLint projTransUniform);
   void HandleEvent(SDL_Event event);

@@ -31,6 +31,10 @@ class FBO {
   GLuint fbo, vbo, vao;
   Texture attachments[NUM_ATTACHMENTS];
   Texture depth;
+
+ private: // disable copying
+  FBO(const FBO& that) = delete;
+  FBO& operator = (const FBO &that) = delete;
 };
 
 #endif

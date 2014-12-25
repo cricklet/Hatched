@@ -66,9 +66,6 @@ FPSCamera::FPSCamera() {
   );
 }
 
-FPSCamera::~FPSCamera() {
-}
-
 void
 FPSCamera::SetupTransforms(GLint viewTransUniform, GLint projTransUniform) {
   glUniformMatrix4fv(viewTransUniform, 1, GL_FALSE, glm::value_ptr(this->viewTrans));
