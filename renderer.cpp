@@ -2,6 +2,8 @@
 #include "fbo.h"
 #include "textures.h"
 
+#include <memory>
+
 static long int getModifiedTime(string source) {
   struct stat attrib;
   stat(source.c_str(), &attrib);

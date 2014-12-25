@@ -16,7 +16,6 @@ struct Texture {
   GLuint texture;
 };
 
-Texture createTexture(string filename = "");
-int nextTextureIndex();
+Texture newTexture(string filename = "");
 
 #endif

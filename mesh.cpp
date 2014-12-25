@@ -25,6 +25,12 @@ Mesh::Mesh(const vector<Vertex> vertices, vector<GLuint> indices) {
   checkErrors();
 }
 
+Mesh::~Mesh() {
+  glDeleteBuffers(1, &this->vao);
+  glDeleteBuffers(1, &this->vbo);
+  glDeleteBuffers(1, &this->ebo);
+}
+
 void Mesh::BindToShader(GLuint shaderProgram) {
   glUseProgram(shaderProgram);
   glBindVertexArray(this->vao);
@@ -55,9 +61,9 @@ void Mesh::BindToShader(GLuint shaderProgram) {
   }
 }
 
-void Mesh::Render(UniformGetter uniforms) {
+void Mesh::Render(Uniforms uniforms) {
   // load the first texture
-  GLint colorUnif = uniforms(COLOR);
+  GLint colorUnif = uniforms.get(COLOR);
   if (colorUnif != -1) {
     glUniform3fv(colorUnif, 1, glm::value_ptr(this->color));
   }

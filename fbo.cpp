@@ -57,9 +57,9 @@ FBO::FBO(int width, int height) {
 
   // Create textures
   for (int i = 0; i < NUM_ATTACHMENTS; i ++) {
-    this->attachments[i] = createTexture();
+    this->attachments[i] = newTexture();
   }
-  this->depth = createTexture();
+  this->depth = newTexture();
   checkErrors();
 
   // Bind textures to frame buffer
@@ -89,9 +89,16 @@ FBO::FBO(int width, int height) {
   // Return to rendering to the default framebuffer (the screen)
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   checkErrors();
+
+  cout << "Create FBO\n";
 }
 
 FBO::~FBO() {
+  glDeleteBuffers(1, &this->fbo);
+  glDeleteBuffers(1, &this->vbo);
+  glDeleteBuffers(1, &this->vao);
+
+  cout << "Destroy FBO\n";
 }
 
 void FBO::BindToShader(GLuint shaderProgram) {
@@ -109,19 +116,19 @@ void FBO::BindToShader(GLuint shaderProgram) {
   checkErrors();
 }
 
-GLuint FBO::GetFrameBuffer() {
+GLuint FBO::GetFrameBuffer() const {
   return this->fbo;
 }
 
-Texture FBO::GetAttachment (int i) {
+Texture FBO::GetAttachment (int i) const {
   return this->attachments[i];
 }
 
-Texture FBO::GetDepth() {
+Texture FBO::GetDepth() const {
   return this->depth;
 }
 
-void FBO::Render() {
+void FBO::Render() const {
   glBindVertexArray(this->vao);
 
   // Disable tests
@@ -130,15 +137,4 @@ void FBO::Render() {
   // Render the fbo quad
   glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
   glDrawArrays(GL_TRIANGLES, 0, numElements);
-}
-
-static map<string, FBO *> cache;
-FBO *FBOFactory(string id, int width, int height) {
-  if (cache.find(id) != cache.end()) {
-    return cache[id];
-  }
-
-  FBO *f = new FBO(width, height);
-  cache[id] = f;
-  return f;
 }

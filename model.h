@@ -12,6 +12,7 @@
 #include <GL/glew.h>
 
 #include <string>
+#include <memory>
 #include <vector>
 using namespace std;
 
@@ -25,13 +26,13 @@ using namespace std;
 class Model {
  public:
   Model(string path, glm::mat4 transform = glm::mat4());
-  void Render(UniformGetter uniforms);
+  void Render(Uniforms uniforms);
   void BindToShader(GLuint shaderProgram);
   float GetSize();
   void SetTransform(glm::mat4 transform);
 
  private:
-  vector<Mesh> meshes;
+  vector<shared_ptr<Mesh>> meshes;
   Bounds bounds;
   glm::mat4 transform;
 };

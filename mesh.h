@@ -38,11 +38,12 @@ struct Bounds {
 class Mesh {
 public:
   Mesh(const vector<Vertex> vertices, vector<GLuint> indices);
+  ~Mesh();
 
   vector<Vertex> vertices;
   vector<GLuint> indices;
 
-  void Render(UniformGetter uniforms);
+  void Render(Uniforms uniforms);
   void BindToShader(GLuint shaderProgram);
 
   Bounds GetBounds();

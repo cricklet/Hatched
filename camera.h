@@ -21,14 +21,12 @@ public:
 class RotationCamera : public Camera {
  public:
   RotationCamera();
-  ~RotationCamera();
 
   void SetupTransforms(GLint viewTransUniform, GLint projTransUniform);
   void HandleEvent(SDL_Event event);
   void Think(float dt);
 
  private:
-
   glm::vec3 location;
   glm::vec3 origin;
   glm::vec3 up;

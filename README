@@ -1,0 +1,5 @@
+copy constructor to null
+
+return by value copies the struct/whatever...
+stuff in lambda cannot change object outside
+lambda is essentially a struct

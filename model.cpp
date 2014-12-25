@@ -14,7 +14,7 @@ static void recursivelyProcess(aiNode* node, const aiScene* scene, Func processM
   }
 }
 
-static Mesh generateMesh(aiMesh *mesh, const aiScene *scene) {
+static auto generateMesh(aiMesh *mesh, const aiScene *scene) {
   vector<Vertex> vertices;
   vector<GLuint> indices;
 
@@ -50,13 +50,13 @@ static Mesh generateMesh(aiMesh *mesh, const aiScene *scene) {
       indices.push_back(face.mIndices[j]);
   }
 
-  return Mesh(vertices, indices);
+  return make_shared<Mesh>(vertices, indices);
 }
 
-static Bounds computeBounds(vector<Mesh> meshes) {
-  Bounds overall = meshes[0].GetBounds();
-  for (Mesh mesh : meshes) {
-    Bounds local = mesh.GetBounds();
+static Bounds computeBounds(vector<shared_ptr<Mesh>> meshes) {
+  auto overall = meshes[0]->GetBounds();
+  for (auto mesh : meshes) {
+    auto local = mesh->GetBounds();
     if (local.minx < overall.minx)
       overall.minx = local.minx;
     if (local.maxx > overall.maxx)
@@ -108,11 +108,12 @@ Model::Model(string path, glm::mat4 transform) {
   this->transform = transform;
 }
 
-void Model::Render(UniformGetter uniforms) {
-  glUniformMatrix4fv(uniforms(MODEL_TRANS), 1, GL_FALSE, glm::value_ptr(this->transform));
+void Model::Render(Uniforms uniforms) {
+  auto transVal = glm::value_ptr(this->transform);
+  glUniformMatrix4fv(uniforms.get(MODEL_TRANS), 1, GL_FALSE, transVal);
 
-  for (Mesh m : this->meshes) {
-    m.Render(uniforms);
+  for (auto m : this->meshes) {
+    m->Render(uniforms);
     checkErrors();
   }
 }
@@ -126,8 +127,8 @@ void Model::SetTransform(glm::mat4 transform) {
 }
 
 void Model::BindToShader(GLuint shaderProgram) {
-  for (Mesh m : this->meshes) {
-    m.BindToShader(shaderProgram);
+  for (auto m : this->meshes) {
+    m->BindToShader(shaderProgram);
     checkErrors();
   }
 }

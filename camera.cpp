@@ -16,9 +16,6 @@ RotationCamera::RotationCamera() {
   );
 }
 
-RotationCamera::~RotationCamera() {
-}
-
 void
 RotationCamera::SetupTransforms(GLint viewTransUniform, GLint projTransUniform) {
   glUniformMatrix4fv(viewTransUniform, 1, GL_FALSE, glm::value_ptr(this->viewTrans));

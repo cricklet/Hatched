@@ -38,38 +38,38 @@ static long int getTimeOfDay() {
   return t.tv_sec * 1000 + t.tv_usec / 1000;
 }
 
-static Model *loadNanosuit() {
-  Model *model = new Model("models/nanosuit/nanosuit2.obj");
+static Model loadNanosuit() {
+  Model model = Model("models/nanosuit/nanosuit2.obj");
   glm::mat4 modelTrans = glm::mat4();
 
   modelTrans = glm::translate(modelTrans, glm::vec3(0, 0, -0.5));
   modelTrans = glm::rotate(modelTrans, (float) (M_PI / 2.0), glm::vec3(0, 0, 1));
   modelTrans = glm::rotate(modelTrans, (float) (M_PI / 2.0), glm::vec3(1, 0, 0));
-  float scale = 1.0f / model->GetSize();
+  float scale = 1.0f / model.GetSize();
   modelTrans = glm::scale(modelTrans, glm::vec3(scale, scale, scale));
 
-  model->SetTransform(modelTrans);
+  model.SetTransform(modelTrans);
 
   return model;
 }
 
-static Model *loadCharacter() {
-  Model *model = new Model("models/minion/minion.obj");
+static Model loadCharacter() {
+  Model model = Model("models/minion/minion.obj");
   glm::mat4 modelTrans = glm::mat4();
 
   modelTrans = glm::translate(modelTrans, glm::vec3(0, 0, -0.5));
   modelTrans = glm::rotate(modelTrans, (float) (M_PI / 2.0), glm::vec3(0, 0, 1));
   modelTrans = glm::rotate(modelTrans, (float) (M_PI / 2.0), glm::vec3(1, 0, 0));
-  float scale = 1.0f / model->GetSize();
+  float scale = 1.0f / model.GetSize();
   modelTrans = glm::scale(modelTrans, glm::vec3(scale, scale, scale));
 
-  model->SetTransform(modelTrans);
+  model.SetTransform(modelTrans);
 
   return model;
 }
 
-static Model *loadHouse() {
-  Model *model = new Model("models/sponza/sponza.obj");
+static Model loadHouse() {
+  Model model = Model("models/sponza/sponza.obj");
   glm::mat4 modelTrans = glm::mat4();
 
   modelTrans = glm::rotate(modelTrans, (float) (M_PI / 2.0), glm::vec3(0, 0, 1));
@@ -78,7 +78,7 @@ static Model *loadHouse() {
   float scale = 1.0f / 2;
   modelTrans = glm::scale(modelTrans, glm::vec3(scale, scale, scale));
 
-  model->SetTransform(modelTrans);
+  model.SetTransform(modelTrans);
 
   return model;
 }
@@ -98,12 +98,8 @@ int sdlMain() {
   glewInit();
   checkErrors();
 
-  Camera *camera = new FPSCamera();
-  //   Camera *camera = new RotationCamera();
-
-  // Model *model = loadNanosuit();
-  Model *model = loadHouse();
-  //    Model *model = loadCharacter();
+  auto camera = RotationCamera(); //FPSCamera();
+  auto model = loadNanosuit(); //loadHouse();
 
   glm::mat4 viewTrans = glm::lookAt(
       glm::vec3(3.0f, 0.0f, 1.0f), // location of camera

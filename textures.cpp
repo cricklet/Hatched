@@ -3,7 +3,7 @@
 #include <SOIL/soil.h>
 
 static int _id = 0;
-int nextTextureIndex() {
+static int nextTextureIndex() {
   cout << "Next texture index: " << _id << "\n";
   return _id++;
 }
@@ -26,6 +26,8 @@ static GLuint loadTexture(const char *filename, int index) {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glGenerateMipmap(GL_TEXTURE_2D);
+
+  return tex;
 }
 
 static map<string, Texture> cache;
@@ -59,12 +61,10 @@ static Texture createTextureBlank() {
   return t;
 }
 
-Texture createTexture(string filename) {
+Texture newTexture(string filename) {
   if (filename.length() > 0) {
     return createTextureFromFile(filename);
   } else {
     return createTextureBlank();
   }
 }
-
-
