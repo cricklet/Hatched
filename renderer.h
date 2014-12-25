@@ -47,6 +47,7 @@ private:
 };
 
 Renderer generateHatchedRenderer(BindScene bindScene);
+Renderer generateSimpleRenderer(BindScene bindScene);
 //Renderer generateDeferredRenderer();
 //Renderer generateSSAORenderer();
 

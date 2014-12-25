@@ -46,26 +46,48 @@ Renderer::Renderer(
     vector<string> s,
     function<void(RenderScene)> r,
     long int t)
-  : sources(s), Render(r), loadTime(t) {};
+: sources(s), Render(r), loadTime(t) {};
+
+Renderer generateSimpleRenderer(BindScene bindScene) {
+  GLuint shader = generateShaderProgram("simple.vert", "simple.frag");
+  bindScene(shader);
+
+  Uniforms uniforms;
+  uniforms.add(shader, {
+      MODEL_TRANS, VIEW_TRANS, PROJ_TRANS, COLOR
+  });
+
+  auto render = [=] (RenderScene renderScene) {
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glUseProgram(shader);
+
+    glEnable(GL_DEPTH_TEST);
+    clearActiveBuffer(0,0,0,0, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    checkErrors();
+
+    renderScene(uniforms);
+    checkErrors();
+  };
+  vector<string> sources = {"simple.vert", "simple.frag"};
+  long int t = getModifiedTime(sources);
+
+  return Renderer(sources, render, t);
+}
 
 Renderer generateHatchedRenderer(BindScene bindScene) {
   GLuint bufferShader = generateShaderProgram("gbuffer.vert", "gbuffer.frag");
-  checkErrors();
-
   Uniforms bufferUniforms;
   bufferUniforms.add(bufferShader, {
       MODEL_TRANS, VIEW_TRANS, PROJ_TRANS
   });
+  bindScene(bufferShader);
 
   GLuint hatchedShader = generateShaderProgram("render_buffer.vert", "deferred_hatched.frag");
   Uniforms hatchedUniforms;
   hatchedUniforms.add(hatchedShader, {
-      MODEL_TRANS, VIEW_TRANS, PROJ_TRANS,
       POSITIONS, NORMALS, DEPTHS, UVS, LIGHT_DIR,
       NUM_TILES, TILES_TEXTURE
   });
-
-  bindScene(hatchedShader);
 
   checkErrors();
 

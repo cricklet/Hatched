@@ -130,6 +130,7 @@ int sdlMain() {
   vector<Generator> generators = {
       // generateDeferredRenderer,
       generateHatchedRenderer,
+      generateSimpleRenderer,
       // generateSSAORenderer,
   };
 
