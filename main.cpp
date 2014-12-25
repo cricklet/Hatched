@@ -114,16 +114,16 @@ int sdlMain() {
       10.0f  //far
   );
 
-  auto renderScene = [&] (UniformGetter u) {
-    camera->SetupTransforms(u(VIEW_TRANS), u(PROJ_TRANS));
+  RenderScene renderScene = [&] (Uniforms u) {
+    camera.SetupTransforms(u.get(VIEW_TRANS), u.get(PROJ_TRANS));
     checkErrors();
 
-    model->Render(u);
+    model.Render(u);
     checkErrors();
   };
 
-  auto bindScene = [&] (GLuint s) {
-    model->BindToShader(s);
+  BindScene bindScene = [&] (GLuint s) {
+    model.BindToShader(s);
   };
 
   typedef function<Renderer(void)> Generator;
@@ -171,7 +171,7 @@ int sdlMain() {
             break;
         }
       }
-      camera->HandleEvent(windowEvent);
+      camera.HandleEvent(windowEvent);
     }
 
     Renderer &renderer = renderers[rendererIndex];
@@ -194,7 +194,7 @@ int sdlMain() {
       timeTillUpdateRenderer = 1.0f;
     }
 
-    camera->Think(dt);
+    camera.Think(dt);
     checkErrors();
 
     renderer.render(renderScene);
