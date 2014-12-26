@@ -60,9 +60,13 @@ Renderer generateSSAORenderer(BindScene bindScene) {
   Uniforms ssaoUniforms;
   ssaoUniforms.add(ssaoShader, {
       POSITIONS, NORMALS, DEPTHS, UVS,
+      RANDOM,
       VIEW_TRANS, PROJ_TRANS,
       INV_VIEW_TRANS, INV_PROJ_TRANS,
   });
+  checkErrors();
+
+  Texture noiseTexture = newTexture("noise.png");
   checkErrors();
 
   auto fbo = make_shared<FBO>(WIDTH, HEIGHT);
@@ -87,13 +91,15 @@ Renderer generateSSAORenderer(BindScene bindScene) {
     // draw the frame buffer to the screen
     glUseProgram(ssaoShader);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    clearActiveBuffer(0,0,0,0, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    clearActiveBuffer();
 
     // setup lighting
     glm::vec3 lightDir = glm::vec3(-1,-1,-1);
     glUniform3fv(ssaoUniforms.get(LIGHT_DIR), 1, glm::value_ptr(lightDir));
 
     setupScene(ssaoUniforms);
+
+    glUniform1i(ssaoUniforms.get(RANDOM), noiseTexture.index);
 
     glUniform1i(ssaoUniforms.get(POSITIONS), fbo->GetAttachment(0).index);
     glUniform1i(ssaoUniforms.get(NORMALS), fbo->GetAttachment(1).index);
@@ -133,7 +139,7 @@ Renderer generateHatchedRenderer(BindScene bindScene) {
   checkErrors();
 
   vector<string> sources = {
-      "gbuffer.vert", "gbuffer.frag", "render_buffer.vert", "deferred_dirlight.frag"
+      "gbuffer.vert", "gbuffer.frag", "render_buffer.vert", "deferred_hatched.frag"
   };
   auto t = getModifiedTime(sources);
   auto render = [=] (SetupScene setupScene, RenderScene renderScene) {
@@ -152,7 +158,7 @@ Renderer generateHatchedRenderer(BindScene bindScene) {
     // draw the frame buffer to the screen
     glUseProgram(hatchedShader);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    clearActiveBuffer(0,0,0,0, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    clearActiveBuffer();
 
     // setup lighting
     glm::vec3 lightDir = glm::vec3(-1,-1,-1);

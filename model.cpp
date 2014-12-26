@@ -14,7 +14,7 @@ static void recursivelyProcess(aiNode* node, const aiScene* scene, Func processM
   }
 }
 
-static auto generateMesh(aiMesh *mesh, const aiScene *scene) {
+static shared_ptr<Mesh> generateMesh(aiMesh *mesh, const aiScene *scene) {
   vector<Vertex> vertices;
   vector<GLuint> indices;
 
@@ -128,7 +128,9 @@ void Model::SetTransform(glm::mat4 transform) {
 
 void Model::BindToShader(GLuint shaderProgram) {
   for (auto m : this->meshes) {
+    cout << m << ": ";
     m->BindToShader(shaderProgram);
+    cout << "\n";
     checkErrors();
   }
 }

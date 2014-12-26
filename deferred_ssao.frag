@@ -18,7 +18,7 @@ uniform vec3 unifLightDir;
 
 uniform sampler2D unifRandom; // stores a texture of random values
 
-const float RADIUS = 0.02;
+const float RADIUS = 0.1;
 const int SAMPLES = 16;
 const vec3 SAMPLE_SPHERE [SAMPLES] = vec3 [SAMPLES]
   (vec3( 0.5381, 0.1856,-0.4319), vec3( 0.1379, 0.2486, 0.4430),
@@ -54,9 +54,43 @@ void main() {
   // view space
   vec3 vPos = posWorldToView(wPos);
   vec3 vNorm = normWorldToView(wNorm);
+  float vDepth = length(vPos);
 
-  // screen space
-  vec2 sCoordRe = posViewToScreen(vPos);
+  // the farther the sample, the smaller the sphere of influence
+  float radius = RADIUS / vDepth;
 
-  outFragColor = vec4(sCoordRe, 0,1);
+  // reflect each sample on a random plane
+  vec3 randomNormal = texture(unifRandom, sCoord * mat2x2(24,0,0,16)).xyz;
+  randomNormal = normalize(randomNormal - vec3(0.5,0.5,0.5));
+
+  float occlusion = 0.0f;
+
+  vec3 avgRay = vec3(0,0,0);
+  for (int i = 0; i < SAMPLES; i ++) {
+    vec3 vRay = SAMPLE_SPHERE[i];
+    vRay = reflect(vRay, randomNormal);
+    vRay = radius * vRay;
+    vRay = sign(dot(vRay, vNorm)) * vRay;
+    avgRay += vRay;
+    
+    // where the ray ends up
+    vec3 vPos0 = vPos + vRay;
+    float vDepth0 = length(vPos0);
+
+    // what's actually there
+    vec2 sCoord1 = posViewToScreen(vPos0);
+    vec3 wPos1 = texture(unifPositions, sCoord1).xyz;
+    vec3 vPos1 = posWorldToView(wPos1);
+    float vDepth1 = length(vPos1);
+
+    if (abs(vDepth1 - vDepth) < 0.1) {
+      if (vDepth1 <= vDepth0) {
+	occlusion += 1.0;
+      }
+      }
+  }
+
+  outFragColor = vec4(normalize(avgRay), 1);
+  occlusion = 1 - occlusion / SAMPLES;
+  outFragColor = vec4(occlusion, occlusion, occlusion, 1.0);
 }

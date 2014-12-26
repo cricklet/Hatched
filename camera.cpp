@@ -35,7 +35,7 @@ RotationCamera::RotationCamera() {
 
   this->projTrans = glm::perspective(
       45.0f, // fov y
-      800.0f / 600.0f, // aspect
+      HEIGHT / (float) WIDTH, // aspect
       0.1f,  // near
       100.0f  //far
   );
@@ -50,8 +50,8 @@ RotationCamera::HandleEvent(SDL_Event event) {
   float dy = event.motion.yrel;
 
   // Determine axis & angle to rotate camera
-  float vx = dx / (float) 800;
-  float vy = - dy / (float) 600;
+  float vx = dx / (float) HEIGHT;
+  float vy = - dy / (float) WIDTH;
   float theta = 4.0 * (fabs(vx) + fabs(vy));
   glm::vec3 towards = this->origin - this->location;
   glm::vec3 right = glm::cross(towards, this->up);
@@ -79,7 +79,7 @@ FPSCamera::FPSCamera() {
 
   this->projTrans = glm::perspective(
       45.0f, // fov y
-      800.0f / 600.0f, // aspect
+      WIDTH / (float) HEIGHT, // aspect
       0.1f,  // near
       100.0f  //far
   );

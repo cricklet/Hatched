@@ -26,7 +26,7 @@ Mesh::Mesh(const vector<Vertex> vertices, vector<GLuint> indices) {
 }
 
 Mesh::~Mesh() {
-  glDeleteBuffers(1, &this->vao);
+  glDeleteVertexArrays(1, &this->vao);
   glDeleteBuffers(1, &this->vbo);
   glDeleteBuffers(1, &this->ebo);
 }
