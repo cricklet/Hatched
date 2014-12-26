@@ -4,7 +4,8 @@ in vec2 outVertBufferCoord;
 
 out vec4 outFragColor;
 
-uniform mat4 unifModelTrans;
+uniform mat4 unifInvViewTrans;
+uniform mat4 unifInvProjTrans;
 uniform mat4 unifViewTrans;
 uniform mat4 unifProjTrans;
 
@@ -29,53 +30,33 @@ const vec3 SAMPLE_SPHERE [SAMPLES] = vec3 [SAMPLES]
    vec3( 0.7119,-0.0154,-0.0918), vec3(-0.0533, 0.0596,-0.5411),
    vec3( 0.0352,-0.0631, 0.5460), vec3(-0.4776, 0.2847,-0.0271));
 
+vec3 posWorldToView(vec3 wPos) {
+  return vec3(unifViewTrans * vec4(wPos, 1));
+}
+
+vec3 normWorldToView(vec3 wNorm) {
+  return vec3(transpose(unifInvViewTrans) * vec4(wNorm,1));
+}
+
+vec2 posViewToScreen(vec3 vPos) {
+  vec4 pPos = unifProjTrans * vec4(vPos,1); // projection space
+  return vec2(0.5,0.5) + 0.5 * pPos.xy / pPos.w;
+}
 
 void main() {
-  vec2 coord = outVertBufferCoord;
+  // screen space
+  vec2 sCoord = outVertBufferCoord;
 
-  vec3 vPosition = texture(unifPositions, coord).xyz;
-  vec3 vNormal = normalize(texture(unifNormals, coord).xyz);
-  float vDepth = length(vPosition);
-  float cDepth = texture(unifDepths, coord).x;
+  // world space
+  vec3 wPos = texture(unifPositions, sCoord).xyz;
+  vec3 wNorm = normalize(texture(unifNormals, sCoord).xyz);
 
-  vec2 cPosition = vec2(unifProjTrans * vec4(vPosition, 1)) / vDepth;
-  cPosition = (cPosition + vec2(1,1)) * 0.5;
+  // view space
+  vec3 vPos = posWorldToView(wPos);
+  vec3 vNorm = normWorldToView(wNorm);
 
-  outFragColor = vec4(cPosition, 0, 1);
-  //outFragColor = vec4(coord,0,1);
+  // screen space
+  vec2 sCoordRe = posViewToScreen(vPos);
 
-  float radius = RADIUS / vDepth;
-
-  // reflect each sample on a random plane
-  vec3 randomNormal = texture(unifRandom, coord * mat2x2(24,0,0,16)).xyz;
-  randomNormal = normalize(randomNormal - vec3(0.5,0.5,0.5));
-
-  vec3 avgRay = vec3(0,0,0);
-
-  float occlusion = 0.0f;
-  for (int i = 0; i < SAMPLES; i ++) {
-    vec3 vRay = SAMPLE_SPHERE[i];
-    vRay = reflect(vRay, randomNormal);
-    vRay = radius * vRay;
-    vRay = sign(dot(vRay, vNormal)) * vRay;
-
-    vec3 vExpectedPosition = vPosition + vRay;
-    float vExpectedDepth = length(vExpectedPosition);
-    vec3 cExpectedPosition = vec3(unifProjTrans * vec4(vExpectedPosition, 1));
-
-    vec2 vActualCoord = clamp(cExpectedPosition.xy, vec2(0,0), vec2(1,1));
-    vec3 vActualPosition = texture(unifPositions, vActualCoord).xyz;
-    float vActualDepth = length(vActualPosition);
-    avgRay += vRay;
-
-    if (vActualDepth <= vExpectedDepth) {
-      occlusion += 1.0;
-    }
-  }
-
-  //outFragColor = vec4(mod(vDepth, 1), 0, 0, 1.0);
-  //outFragColor = vec4(vNormal, 1.0);
-  //outFragColor = vec4(normalize(avgRay), 1.0);
-  //occlusion = 1 - occlusion / SAMPLES;
-  //outFragColor = vec4(occlusion, occlusion, occlusion, 1.0);
+  outFragColor = vec4(sCoordRe, 0,1);
 }

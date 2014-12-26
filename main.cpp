@@ -98,8 +98,8 @@ int sdlMain() {
   glewInit();
   checkErrors();
 
-  auto camera = RotationCamera(); //FPSCamera();
-  auto model = loadNanosuit(); //loadHouse();
+  auto camera = FPSCamera(); //RotationCamera(); //FPSCamera();
+  auto model = loadHouse(); //loadNanosuit(); //loadHouse();
 
   glm::mat4 viewTrans = glm::lookAt(
       glm::vec3(3.0f, 0.0f, 1.0f), // location of camera
@@ -114,10 +114,12 @@ int sdlMain() {
       10.0f  //far
   );
 
-  RenderScene renderScene = [&] (Uniforms u) {
-    camera.SetupTransforms(u.get(VIEW_TRANS), u.get(PROJ_TRANS));
+  SetupScene setupScene = [&] (Uniforms u) {
+    camera.SetupTransforms(u);
     checkErrors();
+  };
 
+  RenderScene renderScene = [&] (Uniforms u) {
     model.Render(u);
     checkErrors();
   };
@@ -130,8 +132,8 @@ int sdlMain() {
   vector<Generator> generators = {
       // generateDeferredRenderer,
       generateHatchedRenderer,
-      generateSimpleRenderer,
-      // generateSSAORenderer,
+      // generateSimpleRenderer,
+      generateSSAORenderer,
   };
 
   vector<Renderer> renderers;
@@ -196,7 +198,7 @@ int sdlMain() {
     camera.Think(dt);
     checkErrors();
 
-    renderer.Render(renderScene);
+    renderer.Render(setupScene, renderScene);
     checkErrors();
 
     SDL_GL_SwapWindow(window);

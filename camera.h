@@ -10,19 +10,24 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
 
+#include "uniforms.h"
+
 class Camera {
 public:
   virtual ~Camera() {};
-  virtual void SetupTransforms(GLint viewTransUniform, GLint projTransUniform) = 0;
+  virtual void SetupTransforms(const Uniforms &u);
   virtual void HandleEvent(SDL_Event event) = 0;
   virtual void Think(float dt) = 0;
+
+protected:
+  glm::mat4 viewTrans;
+  glm::mat4 projTrans;
 };
 
 class RotationCamera : public Camera {
  public:
   RotationCamera();
 
-  void SetupTransforms(GLint viewTransUniform, GLint projTransUniform);
   void HandleEvent(SDL_Event event);
   void Think(float dt);
 
@@ -30,16 +35,12 @@ class RotationCamera : public Camera {
   glm::vec3 location;
   glm::vec3 origin;
   glm::vec3 up;
-
-  glm::mat4 viewTrans;
-  glm::mat4 projTrans;
 };
 
 class FPSCamera : public Camera {
  public:
   FPSCamera();
 
-  void SetupTransforms(GLint viewTransUniform, GLint projTransUniform);
   void HandleEvent(SDL_Event event);
   void Think(float dt);
 
@@ -48,9 +49,6 @@ class FPSCamera : public Camera {
   glm::vec3 location;
   float pitch;
   float yaw;
-
-  glm::mat4 viewTrans;
-  glm::mat4 projTrans;
 
   bool w = false, a = false, s = false, d = false;
 };

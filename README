@@ -1,4 +1,4 @@
-copy constructor to null
+haven't yet refactored loading shaders
 
 return by value copies the struct/whatever...
 stuff in lambda cannot change object outside

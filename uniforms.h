@@ -15,6 +15,8 @@ using namespace std;
 const string MODEL_TRANS = "unifModelTrans";
 const string VIEW_TRANS = "unifViewTrans";
 const string PROJ_TRANS = "unifProjTrans";
+const string INV_VIEW_TRANS = "unifInvViewTrans";
+const string INV_PROJ_TRANS = "unifInvProjTrans";
 const string USE_TEXTURE = "unifUseTexture";
 const string COLOR = "unifColor";
 const string TEXTURE = "unifTexture";

@@ -28,6 +28,7 @@ using namespace std;
 #ifndef RENDERER_H_
 #define RENDERER_H_
 
+typedef function<void(Uniforms)> SetupScene;
 typedef function<void(Uniforms)> RenderScene;
 typedef function<void(GLuint)> BindScene;
 
@@ -35,11 +36,11 @@ class Renderer {
 public:
   Renderer(
       vector<string> s,
-      function<void(RenderScene)> r,
+      function<void(SetupScene, RenderScene)> r,
       long int t
   );
   bool ShouldUpdate();
-  function<void(RenderScene)> Render;
+  function<void(SetupScene, RenderScene)> Render;
 
 private:
   vector<string> sources;
@@ -47,8 +48,8 @@ private:
 };
 
 Renderer generateHatchedRenderer(BindScene bindScene);
-Renderer generateSimpleRenderer(BindScene bindScene);
+//Renderer generateSimpleRenderer(BindScene bindScene);
 //Renderer generateDeferredRenderer();
-//Renderer generateSSAORenderer();
+Renderer generateSSAORenderer(BindScene bindScene);
 
 #endif

@@ -44,32 +44,66 @@ Renderer::ShouldUpdate() {
 
 Renderer::Renderer(
     vector<string> s,
-    function<void(RenderScene)> r,
+    function<void(SetupScene, RenderScene)> r,
     long int t)
 : sources(s), Render(r), loadTime(t) {};
 
-Renderer generateSimpleRenderer(BindScene bindScene) {
-  GLuint shader = generateShaderProgram("simple.vert", "simple.frag");
-  bindScene(shader);
-
-  Uniforms uniforms;
-  uniforms.add(shader, {
-      MODEL_TRANS, VIEW_TRANS, PROJ_TRANS, COLOR
+Renderer generateSSAORenderer(BindScene bindScene) {
+  GLuint bufferShader = generateShaderProgram("gbuffer.vert", "gbuffer.frag");
+  Uniforms bufferUniforms;
+  bufferUniforms.add(bufferShader, {
+      MODEL_TRANS, VIEW_TRANS, PROJ_TRANS,
   });
+  bindScene(bufferShader);
 
-  auto render = [=] (RenderScene renderScene) {
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glUseProgram(shader);
+  GLuint ssaoShader = generateShaderProgram("render_buffer.vert", "deferred_ssao.frag");
+  Uniforms ssaoUniforms;
+  ssaoUniforms.add(ssaoShader, {
+      POSITIONS, NORMALS, DEPTHS, UVS,
+      VIEW_TRANS, PROJ_TRANS,
+      INV_VIEW_TRANS, INV_PROJ_TRANS,
+  });
+  checkErrors();
 
+  auto fbo = make_shared<FBO>(WIDTH, HEIGHT);
+  fbo->BindToShader(ssaoShader);
+  checkErrors();
+
+  vector<string> sources = {"gbuffer.vert", "gbuffer.frag", "render_buffer.vert", "deferred_ssao.frag"};
+  long int t = getModifiedTime(sources);
+  auto render = [=] (SetupScene setupScene, RenderScene renderScene) {
+    // draw to the frame buffer
+    glUseProgram(bufferShader);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo->GetFrameBuffer());
     glEnable(GL_DEPTH_TEST);
     clearActiveBuffer(0,0,0,0, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     checkErrors();
 
-    renderScene(uniforms);
+    // render scene
+    setupScene(bufferUniforms);
+    renderScene(bufferUniforms);
+    checkErrors();
+
+    // draw the frame buffer to the screen
+    glUseProgram(ssaoShader);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    clearActiveBuffer(0,0,0,0, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // setup lighting
+    glm::vec3 lightDir = glm::vec3(-1,-1,-1);
+    glUniform3fv(ssaoUniforms.get(LIGHT_DIR), 1, glm::value_ptr(lightDir));
+
+    setupScene(ssaoUniforms);
+
+    glUniform1i(ssaoUniforms.get(POSITIONS), fbo->GetAttachment(0).index);
+    glUniform1i(ssaoUniforms.get(NORMALS), fbo->GetAttachment(1).index);
+    glUniform1i(ssaoUniforms.get(UVS), fbo->GetAttachment(2).index);
+    glUniform1i(ssaoUniforms.get(DEPTHS), fbo->GetDepth().index);
+    checkErrors();
+
+    fbo->Render();
     checkErrors();
   };
-  vector<string> sources = {"simple.vert", "simple.frag"};
-  long int t = getModifiedTime(sources);
 
   return Renderer(sources, render, t);
 }
@@ -88,7 +122,6 @@ Renderer generateHatchedRenderer(BindScene bindScene) {
       POSITIONS, NORMALS, DEPTHS, UVS, LIGHT_DIR,
       NUM_TILES, TILES_TEXTURE
   });
-
   checkErrors();
 
   int tilesNum = 6;
@@ -103,7 +136,7 @@ Renderer generateHatchedRenderer(BindScene bindScene) {
       "gbuffer.vert", "gbuffer.frag", "render_buffer.vert", "deferred_dirlight.frag"
   };
   auto t = getModifiedTime(sources);
-  auto render = [=] (RenderScene renderScene) {
+  auto render = [=] (SetupScene setupScene, RenderScene renderScene) {
     // draw to the frame buffer
     glUseProgram(bufferShader);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo->GetFrameBuffer());
@@ -111,7 +144,8 @@ Renderer generateHatchedRenderer(BindScene bindScene) {
     clearActiveBuffer(0,0,0,0, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     checkErrors();
 
-    // render scene (includes setting up camera)
+    // render scene
+    setupScene(bufferUniforms);
     renderScene(bufferUniforms);
     checkErrors();
 

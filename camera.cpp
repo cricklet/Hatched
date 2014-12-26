@@ -1,7 +1,32 @@
 #include "camera.h"
+#include "helper.h"
 
 #include <iostream>
 using namespace std;
+
+void
+Camera::SetupTransforms(const Uniforms &u) {
+  GLint viewTransUnif = u.get(VIEW_TRANS);
+  GLint projTransUnif = u.get(PROJ_TRANS);
+  GLint invViewTransUnif = u.get(INV_VIEW_TRANS);
+  GLint invProjTransUnif = u.get(INV_PROJ_TRANS);
+
+  auto set = [] (GLint unif, auto &mat) {
+    if (unif != -1) {
+      glUniformMatrix4fv(unif, 1, GL_FALSE, glm::value_ptr(mat));
+    }
+  };
+
+  set(viewTransUnif, this->viewTrans);
+  set(projTransUnif, this->projTrans);
+
+  auto invView = glm::inverse(this->viewTrans);
+  auto invProj = glm::inverse(this->projTrans);
+  set(invViewTransUnif, invView);
+  set(invProjTransUnif, invProj);
+
+  checkErrors();
+}
 
 RotationCamera::RotationCamera() {
   this->location = glm::vec3(1.2,0,0);
@@ -14,12 +39,6 @@ RotationCamera::RotationCamera() {
       0.1f,  // near
       100.0f  //far
   );
-}
-
-void
-RotationCamera::SetupTransforms(GLint viewTransUniform, GLint projTransUniform) {
-  glUniformMatrix4fv(viewTransUniform, 1, GL_FALSE, glm::value_ptr(this->viewTrans));
-  glUniformMatrix4fv(projTransUniform, 1, GL_FALSE, glm::value_ptr(this->projTrans));
 }
 
 void
@@ -64,12 +83,6 @@ FPSCamera::FPSCamera() {
       0.1f,  // near
       100.0f  //far
   );
-}
-
-void
-FPSCamera::SetupTransforms(GLint viewTransUniform, GLint projTransUniform) {
-  glUniformMatrix4fv(viewTransUniform, 1, GL_FALSE, glm::value_ptr(this->viewTrans));
-  glUniformMatrix4fv(projTransUniform, 1, GL_FALSE, glm::value_ptr(this->projTrans));
 }
 
 static void handleMouse(SDL_Event event, float &pitch, float &yaw) {
