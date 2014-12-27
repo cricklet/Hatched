@@ -47,8 +47,8 @@ private:
   long int loadTime;
 };
 
-Renderer generateHatchedRenderer(BindScene bindScene);
-//Renderer generateSimpleRenderer(BindScene bindScene);
+//Renderer generateHatchedRenderer(BindScene bindScene);
+Renderer generateSimpleRenderer(BindScene bindScene);
 //Renderer generateDeferredRenderer();
 Renderer generateSSAORenderer(BindScene bindScene);
 

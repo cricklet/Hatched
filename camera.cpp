@@ -35,7 +35,7 @@ RotationCamera::RotationCamera() {
 
   this->projTrans = glm::perspective(
       45.0f, // fov y
-      HEIGHT / (float) WIDTH, // aspect
+      WIDTH / (float) HEIGHT, // aspect
       0.1f,  // near
       100.0f  //far
   );

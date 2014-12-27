@@ -9,7 +9,8 @@ uniform mat4 unifViewTrans;
 uniform sampler2D unifPositions;
 uniform sampler2D unifNormals;
 uniform sampler2D unifUVs;
-uniform sampler2D unifDepths;
+
+uniform sampler2D unifBuffer;
 
 uniform sampler2D unifTilesTexture;
 uniform int unifNumTones;
@@ -18,6 +19,8 @@ uniform int unifNumMips;
 uniform vec3 unifLightDir;
 
 void draw(vec2 uv, float mLevel, float tLevel, float weight) {
+  if (mLevel < 0 || tLevel < 0) return;
+  
   vec2 tilesUV = mod(2 * uv, 1);
   tilesUV.x /= unifNumTones;
   tilesUV.y /= 2;
@@ -30,13 +33,19 @@ void draw(vec2 uv, float mLevel, float tLevel, float weight) {
 void main() {
   vec2 sCoord = outVertBufferCoord;
 
+  vec2 uv = texture(unifUVs, sCoord).xy;
+
   vec3 wPos = texture(unifPositions, sCoord).xyz;
-  vec3 wNorm = normalize(texture(unifNormals, sCoord).xyz);
+  vec3 wNorm = texture(unifNormals, sCoord).xyz;
   vec3 vPos = vec3(unifViewTrans * vec4(wPos, 1));
   float vDepth = length(vPos);
 
-  vec2 uv = texture(unifUVs, sCoord).xy;
   float light = 0.5 + 0.5 * dot(-normalize(unifLightDir), normalize(wNorm));
+  light = int(light * 16) / 16.0;
+  
+  float ssao = texture(unifBuffer, sCoord).x;
+  float hardSSAO = 1 - 16 * (1 - ssao);
+  float lightSSAO = 1 - 2 * (1 - ssao);
 
   ///////////////////////////
   // calculate the mip levels
@@ -54,21 +63,32 @@ void main() {
 
   ////////////////////////////
   // calculate the tone levels
-  float toneLevel = (1 - light) * unifNumTones;
+  float tLevel = (1 - hardSSAO) * unifNumTones - 2;
 
-  int toneLevel0 = int(toneLevel);
-  float toneWeight0 = toneLevel - toneLevel0;
+  int tLevel0 = int(tLevel);
+  float tWeight0 = tLevel - tLevel0;
 
-  int toneLevel1 = int(toneLevel) + 1;
-  float toneWeight1 = 1 - toneWeight0;
+  int tLevel1 = int(tLevel) + 1;
+  float tWeight1 = 1 - tWeight0;
 
-  toneLevel0 = clamp(toneLevel0, 0, unifNumTones - 1);
-  toneLevel1 = clamp(toneLevel1, 0, unifNumTones - 1);
+  tLevel0 = clamp(tLevel0, 0, unifNumTones - 1);
+  tLevel1 = clamp(tLevel1, 0, unifNumTones - 1);
 
   outFragColor = vec4(0,0,0,1);
 
-  draw(uv, mLevel0, toneLevel0, mWeight0 * toneWeight0);
-  draw(uv, mLevel1, toneLevel0, mWeight1 * toneWeight0);
-  draw(uv, mLevel0, toneLevel1, mWeight0 * toneWeight1);
-  draw(uv, mLevel1, toneLevel1, mWeight1 * toneWeight1);
+  {
+    draw(uv, mLevel0, tLevel0 - 1, 0);
+    draw(uv, mLevel1, tLevel0 - 1, 0);
+    draw(uv, mLevel0 - 1, tLevel0, 0);
+    draw(uv, mLevel0 - 1, tLevel1, 0);
+  }
+
+  draw(uv, mLevel0, tLevel0, mWeight0 * tWeight0);
+  draw(uv, mLevel1, tLevel0, mWeight1 * tWeight0);
+  draw(uv, mLevel0, tLevel1, mWeight0 * tWeight1);
+  draw(uv, mLevel1, tLevel1, mWeight1 * tWeight1);
+
+  //outFragColor = vec4(0,0,0,1);
+  outFragColor -= vec4(1 - lightSSAO, 1 - lightSSAO, 1 - lightSSAO, 1);
+  outFragColor -= vec4(1 - light, 1 - light, 1 - light, 1);
 }

@@ -51,8 +51,14 @@ Renderer::Renderer(
 Renderer generateSSAORenderer(BindScene bindScene) {
   auto gFBO = make_shared<FBO>(WIDTH, HEIGHT);
   auto ssaoFBO = make_shared<FBO>(WIDTH, HEIGHT);
+  auto blurFBO = make_shared<FBO>(WIDTH, HEIGHT);
 
   Texture noiseTexture = newTexture("noise.png");
+
+  int numTones = 5;
+  int numMips = 4;
+  Texture tilesTexture = newTexture("mipped_hatches.png");
+  checkErrors();
 
   // The first shader renders normals/positions/uv to an fbo
   GLuint gShader = generateShaderProgram("gbuffer.vert", "gbuffer.frag");
@@ -84,7 +90,25 @@ Renderer generateSSAORenderer(BindScene bindScene) {
   ssaoFBO->BindToShader(blurShader);
   checkErrors();
 
-  vector<string> sources = {"gbuffer.vert", "gbuffer.frag", "render_buffer.vert", "deferred_ssao.frag", "blur.frag"};
+  // The fourth shader computes the hatched ssao
+  GLuint hatchShader = generateShaderProgram("render_buffer.vert", "deferred_hatched.frag");
+  Uniforms hatchUniforms;
+  hatchUniforms.add(hatchShader, {
+      NUM_MIPS, NUM_TONES, TILES_TEXTURE,
+      POSITIONS, NORMALS, UVS,
+      BUFFER,
+      LIGHT_DIR,
+      VIEW_TRANS,
+  });
+  blurFBO->BindToShader(hatchShader);
+  checkErrors();
+
+  vector<string> sources = {
+      "gbuffer.vert", "gbuffer.frag",
+      "render_buffer.vert", "deferred_ssao.frag",
+      "blur.frag",
+      "deferred_hatched.frag"
+  };
   long int t = getModifiedTime(sources);
   auto render = [=] (SetupScene setupScene, RenderScene renderScene) {
     { // gbuffer render pass
@@ -119,7 +143,7 @@ Renderer generateSSAORenderer(BindScene bindScene) {
 
     { // blur render pass
       glUseProgram(blurShader);
-      glBindFramebuffer(GL_FRAMEBUFFER, 0);
+      glBindFramebuffer(GL_FRAMEBUFFER, blurFBO->GetFrameBuffer());
 
       glUniform1i(blurUniforms.get(BUFFER), ssaoFBO->GetAttachment(0).index);
       checkErrors();
@@ -127,79 +151,57 @@ Renderer generateSSAORenderer(BindScene bindScene) {
       ssaoFBO->Render();
       checkErrors();
     }
+
+    { // hatching render pass
+      glUseProgram(hatchShader);
+      glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+      glm::vec3 lightDir = glm::vec3(-1,-1,-1);
+      glUniform3fv(hatchUniforms.get(LIGHT_DIR), 1, glm::value_ptr(lightDir));
+
+      glUniform1i(hatchUniforms.get(NUM_TONES), numTones);
+      glUniform1i(hatchUniforms.get(NUM_MIPS), numMips);
+      glUniform1i(hatchUniforms.get(TILES_TEXTURE), tilesTexture.index);
+
+      glUniform1i(hatchUniforms.get(POSITIONS), gFBO->GetAttachment(0).index);
+      glUniform1i(hatchUniforms.get(NORMALS), gFBO->GetAttachment(1).index);
+      glUniform1i(hatchUniforms.get(UVS), gFBO->GetAttachment(2).index);
+      glUniform1i(hatchUniforms.get(BUFFER), blurFBO->GetAttachment(0).index);
+      checkErrors();
+
+      setupScene(hatchUniforms);
+
+      blurFBO->Render();
+      checkErrors();
+    }
   };
 
   return Renderer(sources, render, t);
 }
 
-Renderer generateHatchedRenderer(BindScene bindScene) {
-  GLuint bufferShader = generateShaderProgram("gbuffer.vert", "gbuffer.frag");
-  Uniforms bufferUniforms;
-  bufferUniforms.add(bufferShader, {
-      MODEL_TRANS, VIEW_TRANS, PROJ_TRANS
+Renderer generateSimpleRenderer(BindScene bindScene) {
+  GLuint shader = generateShaderProgram("simple.vert", "simple.frag");
+  bindScene(shader);
+
+  Uniforms uniforms;
+  uniforms.add(shader, {
+      MODEL_TRANS, VIEW_TRANS, PROJ_TRANS, COLOR
   });
-  bindScene(bufferShader);
 
-  GLuint hatchedShader = generateShaderProgram("render_buffer.vert", "deferred_hatched.frag");
-  Uniforms hatchedUniforms;
-  hatchedUniforms.add(hatchedShader, {
-      POSITIONS, NORMALS, DEPTHS, UVS, LIGHT_DIR,
-      NUM_MIPS, NUM_TONES, TILES_TEXTURE,
-      VIEW_TRANS,
-  });
-  checkErrors();
-
-  int numTones = 4;
-  int numMips = 4;
-  Texture tilesTexture = newTexture("mipped_hatches.png");
-  checkErrors();
-
-  auto fbo = make_shared<FBO>(WIDTH, HEIGHT);
-  fbo->BindToShader(hatchedShader);
-  checkErrors();
-
-  vector<string> sources = {
-      "gbuffer.vert", "gbuffer.frag", "render_buffer.vert", "deferred_hatched.frag"
-  };
-  auto t = getModifiedTime(sources);
   auto render = [=] (SetupScene setupScene, RenderScene renderScene) {
-    // draw to the frame buffer
-    glUseProgram(bufferShader);
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo->GetFrameBuffer());
-    glEnable(GL_DEPTH_TEST);
-    clearActiveBuffer(0,0,0,0, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    checkErrors();
-
-    // render scene
-    setupScene(bufferUniforms);
-    renderScene(bufferUniforms);
-    checkErrors();
-
-    // draw the frame buffer to the screen
-    glUseProgram(hatchedShader);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glUseProgram(shader);
+
+    glEnable(GL_DEPTH_TEST);
     clearActiveBuffer();
-
-    setupScene(hatchedUniforms);
-
-    // setup lighting
-    glm::vec3 lightDir = glm::vec3(-1,-1,-1);
-
-    glUniform3fv(hatchedUniforms.get(LIGHT_DIR), 1, glm::value_ptr(lightDir));
-
-    glUniform1i(hatchedUniforms.get(NUM_TONES), numTones);
-    glUniform1i(hatchedUniforms.get(NUM_MIPS), numMips);
-    glUniform1i(hatchedUniforms.get(TILES_TEXTURE), tilesTexture.index);
-
-    glUniform1i(hatchedUniforms.get(POSITIONS), fbo->GetAttachment(0).index);
-    glUniform1i(hatchedUniforms.get(NORMALS), fbo->GetAttachment(1).index);
-    glUniform1i(hatchedUniforms.get(UVS), fbo->GetAttachment(2).index);
-    glUniform1i(hatchedUniforms.get(DEPTHS), fbo->GetDepth().index);
     checkErrors();
 
-    fbo->Render();
+    setupScene(uniforms);
+    renderScene(uniforms);
     checkErrors();
   };
+  vector<string> sources = {"simple.vert", "simple.frag"};
+  long int t = getModifiedTime(sources);
 
   return Renderer(sources, render, t);
 }

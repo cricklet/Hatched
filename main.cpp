@@ -45,6 +45,7 @@ static Model loadNanosuit() {
   modelTrans = glm::translate(modelTrans, glm::vec3(0, 0, -0.5));
   modelTrans = glm::rotate(modelTrans, (float) (M_PI / 2.0), glm::vec3(0, 0, 1));
   modelTrans = glm::rotate(modelTrans, (float) (M_PI / 2.0), glm::vec3(1, 0, 0));
+
   float scale = 1.0f / model.GetSize();
   modelTrans = glm::scale(modelTrans, glm::vec3(scale, scale, scale));
 
@@ -98,7 +99,7 @@ int sdlMain() {
   glewInit();
   checkErrors();
 
-  auto camera = FPSCamera(); //RotationCamera(); //FPSCamera();
+  auto camera = FPSCamera();
   auto model = loadHouse();
 
   glm::mat4 viewTrans = glm::lookAt(
@@ -131,8 +132,8 @@ int sdlMain() {
   typedef function<Renderer(BindScene)> Generator;
   vector<Generator> generators = {
       // generateDeferredRenderer,
-      generateHatchedRenderer,
-      // generateSimpleRenderer,
+      // generateHatchedRenderer,
+      generateSimpleRenderer,
       generateSSAORenderer,
   };
 
