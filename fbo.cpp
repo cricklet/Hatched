@@ -95,6 +95,7 @@ FBO::~FBO() {
   glDeleteVertexArrays(1, &this->vao);
   glDeleteFramebuffers(1, &this->fbo);
   glDeleteBuffers(1, &this->vbo);
+  cout << "~FBO()\n";
 }
 
 void FBO::BindToShader(GLuint shaderProgram) {

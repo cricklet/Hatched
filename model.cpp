@@ -128,9 +128,7 @@ void Model::SetTransform(glm::mat4 transform) {
 
 void Model::BindToShader(GLuint shaderProgram) {
   for (auto m : this->meshes) {
-    cout << m << ": ";
     m->BindToShader(shaderProgram);
-    cout << "\n";
     checkErrors();
   }
 }

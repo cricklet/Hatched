@@ -75,7 +75,7 @@ static Model loadHouse() {
   modelTrans = glm::rotate(modelTrans, (float) (M_PI / 2.0), glm::vec3(0, 0, 1));
   modelTrans = glm::rotate(modelTrans, (float) (M_PI / 2.0), glm::vec3(1, 0, 0));
 
-  float scale = 1.0f / 2;
+  float scale = 1.0f;
   modelTrans = glm::scale(modelTrans, glm::vec3(scale, scale, scale));
 
   model.SetTransform(modelTrans);
@@ -99,7 +99,7 @@ int sdlMain() {
   checkErrors();
 
   auto camera = FPSCamera(); //RotationCamera(); //FPSCamera();
-  auto model = loadHouse(); //loadNanosuit(); //loadHouse();
+  auto model = loadHouse();
 
   glm::mat4 viewTrans = glm::lookAt(
       glm::vec3(3.0f, 0.0f, 1.0f), // location of camera
