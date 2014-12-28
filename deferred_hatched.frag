@@ -21,7 +21,7 @@ uniform vec3 unifLightDir;
 void draw(vec2 uv, float mLevel, float tLevel, float weight) {
   if (mLevel < 0 || tLevel < 0) return;
   
-  vec2 tilesUV = mod(2 * uv, 1);
+  vec2 tilesUV = mod(uv, 1);
   tilesUV.x /= unifNumTones;
   tilesUV.y /= 2;
   tilesUV /= pow(2, mLevel);
@@ -30,26 +30,10 @@ void draw(vec2 uv, float mLevel, float tLevel, float weight) {
   outFragColor += weight * texture(unifTilesTexture, tilesUV);
 }
 
-void main() {
-  vec2 sCoord = outVertBufferCoord;
-
-  vec2 uv = texture(unifUVs, sCoord).xy;
-
-  vec3 wPos = texture(unifPositions, sCoord).xyz;
-  vec3 wNorm = texture(unifNormals, sCoord).xyz;
-  vec3 vPos = vec3(unifViewTrans * vec4(wPos, 1));
-  float vDepth = length(vPos);
-
-  float light = 0.5 + 0.5 * dot(-normalize(unifLightDir), normalize(wNorm));
-  light = int(light * 16) / 16.0;
-  
-  float ssao = texture(unifBuffer, sCoord).x;
-  float hardSSAO = 1 - 4 * (1 - ssao);
-  float lightSSAO = 1 - 2 * (1 - ssao);
-
+void drawHatching(float vDepth, float light, vec2 uv) {
   ///////////////////////////
   // calculate the mip levels
-  float mipNearestDepth = 8;
+  float mipNearestDepth = 2;
 
   float mDepth = vDepth / mipNearestDepth;
   float mLevel = clamp(log(mDepth) / log(2), 0, unifNumMips - 1);
@@ -63,7 +47,7 @@ void main() {
 
   ////////////////////////////
   // calculate the tone levels
-  float tLevel = (1 - hardSSAO) * unifNumTones - 2;
+  float tLevel = (1 - light) * unifNumTones - 2;
 
   int tLevel0 = int(tLevel);
   float tWeight0 = tLevel - tLevel0;
@@ -87,8 +71,28 @@ void main() {
   draw(uv, mLevel1, tLevel0, mWeight1 * tWeight0);
   draw(uv, mLevel0, tLevel1, mWeight0 * tWeight1);
   draw(uv, mLevel1, tLevel1, mWeight1 * tWeight1);
+}
 
-  outFragColor = vec4(1,1,1,1);
+void main() {
+  vec2 sCoord = outVertBufferCoord;
+
+  vec2 uv = texture(unifUVs, sCoord).xy;
+
+  vec3 wPos = texture(unifPositions, sCoord).xyz;
+  vec3 wNorm = texture(unifNormals, sCoord).xyz;
+  vec3 vPos = vec3(unifViewTrans * vec4(wPos, 1));
+  float vDepth = length(vPos);
+
+  float light = 0.5 + 0.5 * dot(-normalize(unifLightDir), normalize(wNorm));
+  light = int(light * 16) / 16.0;
+  
+  float ssao = texture(unifBuffer, sCoord).x;
+  float hardSSAO = 1 - 4 * (1 - ssao);
+  float lightSSAO = 1 - 2 * (1 - ssao);
+
+  drawHatching(vDepth, clamp(light, 0,1), uv);
+
+  //outFragColor = vec4(1,1,1,1);
   outFragColor -= vec4(1 - lightSSAO, 1 - lightSSAO, 1 - lightSSAO, 1);
   outFragColor -= vec4(1 - light, 1 - light, 1 - light, 1);
 }

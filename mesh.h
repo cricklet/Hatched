@@ -55,9 +55,4 @@ private:
   glm::vec3 color;
 };
 
-shared_ptr<Mesh> generateCube(
-    float minX, float minY, float minZ,
-    float maxX, float maxY, float maxZ,
-    bool flipNorms = false);
-
 #endif

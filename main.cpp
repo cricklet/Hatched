@@ -31,6 +31,7 @@
 #include "renderer.h"
 #include "fbo.h"
 #include "scene.h"
+#include "shapes.h"
 
 using namespace std;
 
@@ -56,32 +57,24 @@ static auto loadNanosuit() {
   return model;
 }
 
-static auto loadHouse() {
-  auto model = make_shared<Model>("models/sponza/sponza.obj");
-  glm::mat4 modelTrans = glm::mat4();
-
-  modelTrans = glm::rotate(modelTrans, (float) (M_PI / 2.0), glm::vec3(0, 0, 1));
-  modelTrans = glm::rotate(modelTrans, (float) (M_PI / 2.0), glm::vec3(1, 0, 0));
-
-  float scale = 1.0f;
-  modelTrans = glm::scale(modelTrans, glm::vec3(scale, scale, scale));
-
-  model->SetTransform(modelTrans);
-
-  return model;
-}
-
 static auto loadScene() {
-  auto h = static_pointer_cast<Renderable>(loadHouse());
-  auto n = static_pointer_cast<Renderable>(loadNanosuit());
-  auto s = make_shared<Scene>();
+  auto nano = static_pointer_cast<Renderable>(loadNanosuit());
+  auto nanoTrans = glm::mat4();
+
+  auto scene = make_shared<Scene>();
 
   vector<string> envFlags = {"env"};
   vector<string> objFlags = {"obj"};
-  s->Add(h, glm::mat4(), envFlags);
-  s->Add(n, glm::mat4(), objFlags);
 
-  return s;
+  scene->Add(nano, glm::mat4(), objFlags);
+
+  auto plane = generatePlane(10);
+  auto planeTrans = glm::translate(glm::mat4(), glm::vec3(0,0,-0.5));
+  for (int i = 0; i < plane.meshes.size(); i ++) {
+    scene->Add(plane.meshes[i], planeTrans * plane.transforms[i], envFlags);
+  }
+
+  return scene;
 }
 
 int sdlMain() {
