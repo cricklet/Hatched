@@ -18,7 +18,7 @@ uniform vec3 unifLightDir;
 
 uniform sampler2D unifRandom; // stores a texture of random values
 
-const float RADIUS = 0.1;
+const float RADIUS = 0.01;
 const int SAMPLES = 16;
 
 const vec3 SAMPLE_HEMI [SAMPLES] = vec3 [SAMPLES]

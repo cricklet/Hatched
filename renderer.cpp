@@ -56,9 +56,12 @@ Renderer generateSSAORenderer(BindScene bindScene) {
   auto noiseTexture = make_shared<Texture>("noise.png");
   checkErrors();
 
-  int numTones = 5;
-  int numMips = 4;
-  auto tilesTexture = make_shared<Texture>("mipped_hatches.png");
+  auto hatch0Texture = make_shared<Texture>("hatch_0.jpg");
+  auto hatch1Texture = make_shared<Texture>("hatch_1.jpg");
+  auto hatch2Texture = make_shared<Texture>("hatch_2.jpg");
+  auto hatch3Texture = make_shared<Texture>("hatch_3.jpg");
+  auto hatch4Texture = make_shared<Texture>("hatch_4.jpg");
+  auto hatch5Texture = make_shared<Texture>("hatch_5.jpg");
   checkErrors();
 
   // The first shader renders normals/positions/uv to an fbo
@@ -95,7 +98,8 @@ Renderer generateSSAORenderer(BindScene bindScene) {
   GLuint hatchShader = generateShaderProgram("render_buffer.vert", "deferred_hatched.frag");
   Uniforms hatchUniforms;
   hatchUniforms.add(hatchShader, {
-      NUM_MIPS, NUM_TONES, TILES_TEXTURE,
+      HATCH0_TEXTURE, HATCH1_TEXTURE, HATCH2_TEXTURE,
+      HATCH3_TEXTURE, HATCH4_TEXTURE, HATCH5_TEXTURE,
       POSITIONS, NORMALS, UVS,
       BUFFER,
       LIGHT_DIR,
@@ -160,9 +164,12 @@ Renderer generateSSAORenderer(BindScene bindScene) {
       glm::vec3 lightDir = glm::vec3(-1,-1,-1);
       glUniform3fv(hatchUniforms.get(LIGHT_DIR), 1, glm::value_ptr(lightDir));
 
-      glUniform1i(hatchUniforms.get(NUM_TONES), numTones);
-      glUniform1i(hatchUniforms.get(NUM_MIPS), numMips);
-      glUniform1i(hatchUniforms.get(TILES_TEXTURE), tilesTexture->index);
+      glUniform1i(hatchUniforms.get(HATCH0_TEXTURE), hatch0Texture->index);
+      glUniform1i(hatchUniforms.get(HATCH1_TEXTURE), hatch1Texture->index);
+      glUniform1i(hatchUniforms.get(HATCH2_TEXTURE), hatch2Texture->index);
+      glUniform1i(hatchUniforms.get(HATCH3_TEXTURE), hatch3Texture->index);
+      glUniform1i(hatchUniforms.get(HATCH4_TEXTURE), hatch4Texture->index);
+      glUniform1i(hatchUniforms.get(HATCH5_TEXTURE), hatch5Texture->index);
 
       glUniform1i(hatchUniforms.get(POSITIONS), gFBO->GetAttachmentIndex(0));
       glUniform1i(hatchUniforms.get(NORMALS), gFBO->GetAttachmentIndex(1));

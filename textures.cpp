@@ -35,11 +35,13 @@ static GLuint loadTexture(const char *filename, int index) {
   glTexImage2D(
       GL_TEXTURE_2D, 0 /*mipmap*/, GL_RGB, width, height,
       0, GL_RGB, GL_UNSIGNED_BYTE, image);
+  checkErrors();
 
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glGenerateMipmap(GL_TEXTURE_2D);
   checkErrors();
 
   SOIL_free_image_data(image);
