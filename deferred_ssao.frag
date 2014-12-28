@@ -18,7 +18,7 @@ uniform vec3 unifLightDir;
 
 uniform sampler2D unifRandom; // stores a texture of random values
 
-const float RADIUS = 0.5;
+const float RADIUS = 0.1;
 const int SAMPLES = 16;
 
 const vec3 SAMPLE_HEMI [SAMPLES] = vec3 [SAMPLES]
@@ -99,7 +99,7 @@ void main() {
     vec3 vPos1 = posWorldToView(wPos1);
     float vDepth1 = length(vPos1);
 
-    if (abs(vDepth1 - vDepth) < 0.1) {
+    if (abs(vDepth1 - vDepth) < 0.02) {
       if (vDepth1 <= vDepth0) {
 	occlusion += 1.0;
       }

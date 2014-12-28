@@ -55,13 +55,6 @@ FBO::FBO(int width, int height) {
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
   checkErrors();
 
-  // Create textures
-  for (int i = 0; i < NUM_ATTACHMENTS; i ++) {
-    this->attachments[i] = newTexture();
-  }
-  this->depth = newTexture();
-  checkErrors();
-
   // Bind textures to frame buffer
   GLuint drawBuffers[NUM_ATTACHMENTS];
   for (int i = 0; i < NUM_ATTACHMENTS; i ++) {
@@ -84,7 +77,7 @@ FBO::FBO(int width, int height) {
     std::cerr << "glCheckF ramebufferStatus() failed\n";
   }
 
-  printStatus();
+  // printStatus();
 
   // Return to rendering to the default framebuffer (the screen)
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -95,7 +88,6 @@ FBO::~FBO() {
   glDeleteVertexArrays(1, &this->vao);
   glDeleteFramebuffers(1, &this->fbo);
   glDeleteBuffers(1, &this->vbo);
-  cout << "~FBO()\n";
 }
 
 void FBO::BindToShader(GLuint shaderProgram) {
@@ -117,12 +109,12 @@ GLuint FBO::GetFrameBuffer() const {
   return this->fbo;
 }
 
-Texture FBO::GetAttachment (int i) const {
-  return this->attachments[i];
+int FBO::GetAttachmentIndex (int i) const {
+  return this->attachments[i].index;
 }
 
-Texture FBO::GetDepth() const {
-  return this->depth;
+int FBO::GetDepthIndex () const {
+  return this->depth.index;
 }
 
 void FBO::Render() const {

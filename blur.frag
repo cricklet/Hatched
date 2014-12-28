@@ -4,7 +4,7 @@ in vec2 outVertBufferCoord;
 out vec4 outFragColor;
 uniform sampler2D unifBuffer;
 
-const float BLUR_RADIUS = 0.002;
+const float BLUR_RADIUS = 0.0015;
 
 void main () {
   vec4 result = vec4(0,0,0,1);

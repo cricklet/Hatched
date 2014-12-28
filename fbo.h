@@ -23,8 +23,8 @@ class FBO {
 
   void BindToShader(GLuint shaderProgram);
   GLuint GetFrameBuffer() const;
-  Texture GetAttachment(int i) const;
-  Texture GetDepth() const;
+  int GetAttachmentIndex(int i) const;
+  int GetDepthIndex() const;
   void Render() const;
 
  private:

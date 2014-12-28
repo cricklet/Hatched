@@ -45,7 +45,7 @@ void main() {
   
   float ssao = texture(unifBuffer, sCoord).x;
   float hardSSAO = 1 - 4 * (1 - ssao);
-  float lightSSAO = 1 - 1 * (1 - ssao);
+  float lightSSAO = 1 - 2 * (1 - ssao);
 
   ///////////////////////////
   // calculate the mip levels
@@ -88,7 +88,7 @@ void main() {
   draw(uv, mLevel0, tLevel1, mWeight0 * tWeight1);
   draw(uv, mLevel1, tLevel1, mWeight1 * tWeight1);
 
-  //outFragColor = vec4(1,1,1,1);
-  //outFragColor -= vec4(1 - lightSSAO, 1 - lightSSAO, 1 - lightSSAO, 1);
+  outFragColor = vec4(1,1,1,1);
+  outFragColor -= vec4(1 - lightSSAO, 1 - lightSSAO, 1 - lightSSAO, 1);
   outFragColor -= vec4(1 - light, 1 - light, 1 - light, 1);
 }

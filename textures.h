@@ -11,11 +11,16 @@ using namespace std;
 #define GLEW_STATIC
 #include <GL/glew.h>
 
-struct Texture {
+class Texture {
+public:
+  Texture(string filename = "");
+  ~Texture();
   int index;
   GLuint texture;
-};
 
-Texture newTexture(string filename = "");
+private: // disable copying
+  Texture(const Texture& that) = delete;
+  Texture& operator = (const Texture &that) = delete;
+};
 
 #endif

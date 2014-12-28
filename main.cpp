@@ -134,6 +134,7 @@ int sdlMain() {
   for (Generator &generator : generators) {
     Renderer r = generator(bindScene);
     renderers.push_back(r);
+    checkErrors();
   }
 
   int rendererIndex = 0;

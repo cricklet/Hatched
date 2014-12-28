@@ -101,13 +101,13 @@ Model::Model(string path, glm::mat4 transform) {
   recursivelyProcess(scene->mRootNode, scene, addMesh);
 
   this->bounds = computeBounds(this->meshes);
-  cout << "Model bounds: "
+  /*cout << "Model bounds: "
       << this->bounds.minx << ", "
       << this->bounds.miny << ", "
       << this->bounds.minz << " - "
       << this->bounds.maxx << ", "
       << this->bounds.maxy << ", "
-      << this->bounds.maxz << "\n";
+      << this->bounds.maxz << "\n";*/
 
   this->transform = transform;
 }

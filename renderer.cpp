@@ -53,11 +53,12 @@ Renderer generateSSAORenderer(BindScene bindScene) {
   auto ssaoFBO = make_shared<FBO>(WIDTH, HEIGHT);
   auto blurFBO = make_shared<FBO>(WIDTH, HEIGHT);
 
-  Texture noiseTexture = newTexture("noise.png");
+  auto noiseTexture = make_shared<Texture>("noise.png");
+  checkErrors();
 
   int numTones = 5;
   int numMips = 4;
-  Texture tilesTexture = newTexture("mipped_hatches.png");
+  auto tilesTexture = make_shared<Texture>("mipped_hatches.png");
   checkErrors();
 
   // The first shader renders normals/positions/uv to an fbo
@@ -130,11 +131,11 @@ Renderer generateSSAORenderer(BindScene bindScene) {
 
       setupScene(ssaoUniforms);
 
-      glUniform1i(ssaoUniforms.get(RANDOM), noiseTexture.index);
-      glUniform1i(ssaoUniforms.get(POSITIONS), gFBO->GetAttachment(0).index);
-      glUniform1i(ssaoUniforms.get(NORMALS), gFBO->GetAttachment(1).index);
-      glUniform1i(ssaoUniforms.get(UVS), gFBO->GetAttachment(2).index);
-      glUniform1i(ssaoUniforms.get(DEPTHS), gFBO->GetDepth().index);
+      glUniform1i(ssaoUniforms.get(RANDOM), noiseTexture->index);
+      glUniform1i(ssaoUniforms.get(POSITIONS), gFBO->GetAttachmentIndex(0));
+      glUniform1i(ssaoUniforms.get(NORMALS), gFBO->GetAttachmentIndex(1));
+      glUniform1i(ssaoUniforms.get(UVS), gFBO->GetAttachmentIndex(2));
+      glUniform1i(ssaoUniforms.get(DEPTHS), gFBO->GetDepthIndex());
       checkErrors();
 
       gFBO->Render();
@@ -145,7 +146,7 @@ Renderer generateSSAORenderer(BindScene bindScene) {
       glUseProgram(blurShader);
       glBindFramebuffer(GL_FRAMEBUFFER, blurFBO->GetFrameBuffer());
 
-      glUniform1i(blurUniforms.get(BUFFER), ssaoFBO->GetAttachment(0).index);
+      glUniform1i(blurUniforms.get(BUFFER), ssaoFBO->GetAttachmentIndex(0));
       checkErrors();
 
       ssaoFBO->Render();
@@ -161,12 +162,12 @@ Renderer generateSSAORenderer(BindScene bindScene) {
 
       glUniform1i(hatchUniforms.get(NUM_TONES), numTones);
       glUniform1i(hatchUniforms.get(NUM_MIPS), numMips);
-      glUniform1i(hatchUniforms.get(TILES_TEXTURE), tilesTexture.index);
+      glUniform1i(hatchUniforms.get(TILES_TEXTURE), tilesTexture->index);
 
-      glUniform1i(hatchUniforms.get(POSITIONS), gFBO->GetAttachment(0).index);
-      glUniform1i(hatchUniforms.get(NORMALS), gFBO->GetAttachment(1).index);
-      glUniform1i(hatchUniforms.get(UVS), gFBO->GetAttachment(2).index);
-      glUniform1i(hatchUniforms.get(BUFFER), blurFBO->GetAttachment(0).index);
+      glUniform1i(hatchUniforms.get(POSITIONS), gFBO->GetAttachmentIndex(0));
+      glUniform1i(hatchUniforms.get(NORMALS), gFBO->GetAttachmentIndex(1));
+      glUniform1i(hatchUniforms.get(UVS), gFBO->GetAttachmentIndex(2));
+      glUniform1i(hatchUniforms.get(BUFFER), blurFBO->GetAttachmentIndex(0));
       checkErrors();
 
       setupScene(hatchUniforms);

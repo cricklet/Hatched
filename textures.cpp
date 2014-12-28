@@ -2,17 +2,31 @@
 
 #include <SOIL/soil.h>
 
-static int _id = 0;
-static int nextTextureIndex() {
-  cout << "Next texture index: " << _id << "\n";
-  return _id++;
+static bool indicesInUse[100]; // initialized to all zero b/c static
+
+static int newTextureIndex () {
+  for (int i = 0; i < 100; i ++) {
+    if (indicesInUse[i] == false) {
+      indicesInUse[i] = true;
+      // cout << "Next texture index: " << i << "\n";
+      return i;
+    }
+  }
+  // cout << "Failed to retrieve texture index: " << -1 << "\n";
+  return -1;
+}
+
+static void freeTextureIndex (int i) {
+  indicesInUse[i] = false;
+  // cout << "Freeing texture index: " << i << "\n";
 }
 
 static GLuint loadTexture(const char *filename, int index) {
-  GLuint tex;
-  glGenTextures(1, &tex);
+  GLuint texture;
+
+  glGenTextures(1, &texture);
   glActiveTexture(index + GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, tex);
+  glBindTexture(GL_TEXTURE_2D, texture);
 
   int width, height;
   unsigned char* image = SOIL_load_image(filename, &width, &height, 0, SOIL_LOAD_RGB);
@@ -27,44 +41,36 @@ static GLuint loadTexture(const char *filename, int index) {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glGenerateMipmap(GL_TEXTURE_2D);
 
-  return tex;
+  return texture;
 }
 
-static map<string, Texture> cache;
+static GLuint loadTexture(int index) {
+  GLuint texture;
 
-static Texture createTextureFromFile(string filename) {
-  if (cache.find(filename) != cache.end()) {
-    return cache[filename];
-  }
-
-  Texture t;
-  t.index = nextTextureIndex();
-  t.texture = loadTexture(filename.c_str(), t.index);
-
-  cache[filename] = t;
-
-  return t;
-}
-
-static Texture createTextureBlank() {
-  Texture t;
-  t.index = nextTextureIndex();
-
-  glActiveTexture(GL_TEXTURE0 + t.index);
-  glGenTextures(1, &t.texture);
-  glBindTexture(GL_TEXTURE_2D, t.texture);
+  glActiveTexture(GL_TEXTURE0 + index);
+  glGenTextures(1, &texture);
+  glBindTexture(GL_TEXTURE_2D, texture);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-  return t;
+  return texture;
 }
 
-Texture newTexture(string filename) {
+Texture::Texture(string filename) {
+  this->index = newTextureIndex();
+
   if (filename.length() > 0) {
-    return createTextureFromFile(filename);
+    this->texture = loadTexture(filename.c_str(), this->index);
   } else {
-    return createTextureBlank();
+    this->texture = loadTexture(this->index);
   }
+  // cout << "Texture() #" << this->index << "\n";
+}
+
+Texture::~Texture() {
+  // cout << "~Texture() #" << this->index << "\n";
+  glDeleteTextures(1, &this->texture);
+  freeTextureIndex(this->index);
 }
