@@ -20,6 +20,7 @@ using namespace std;
 
 #include "helper.h"
 #include "uniforms.h"
+#include "renderable.h"
 
 struct Vertex {
   glm::vec3 position;
@@ -36,7 +37,7 @@ struct Bounds {
   float maxz = FLT_MAX;
 };
 
-class Mesh {
+class Mesh : public Renderable {
 public:
   Mesh(const vector<Vertex> vertices, vector<GLuint> indices);
   ~Mesh();
@@ -44,7 +45,7 @@ public:
   vector<Vertex> vertices;
   vector<GLuint> indices;
 
-  void Render(Uniforms uniforms);
+  void Render(Uniforms uniforms, glm::mat4 parentTransform);
   void BindToShader(GLuint shaderProgram);
 
   Bounds GetBounds();

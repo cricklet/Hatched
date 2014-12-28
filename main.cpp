@@ -1,4 +1,5 @@
 #include <string>
+#include <memory>
 #include <vector>
 #include <fstream>
 #include <streambuf>
@@ -29,6 +30,7 @@
 #include "model.h"
 #include "renderer.h"
 #include "fbo.h"
+#include "scene.h"
 
 using namespace std;
 
@@ -38,31 +40,24 @@ static long int getTimeOfDay() {
   return t.tv_sec * 1000 + t.tv_usec / 1000;
 }
 
-static Model loadNanosuit() {
-  Model model = Model("models/nanosuit/nanosuit2.obj");
+static auto loadNanosuit() {
+  auto model = make_shared<Model>("models/nanosuit/nanosuit2.obj");
   glm::mat4 modelTrans = glm::mat4();
 
   modelTrans = glm::translate(modelTrans, glm::vec3(0, 0, -0.5));
   modelTrans = glm::rotate(modelTrans, (float) (M_PI / 2.0), glm::vec3(0, 0, 1));
   modelTrans = glm::rotate(modelTrans, (float) (M_PI / 2.0), glm::vec3(1, 0, 0));
 
-  float scale = 1.0f / model.GetSize();
+  float scale = 1.0f / model->GetSize();
   modelTrans = glm::scale(modelTrans, glm::vec3(scale, scale, scale));
 
-  model.SetTransform(modelTrans);
-
-  Bounds b = model.GetBounds();
-  model.AddMesh(generateCube(
-      b.minx - 30, b.miny, b.minz - 30,
-      b.maxx + 30, b.maxy + 10, b.maxz + 30,
-      true
-  ));
+  model->SetTransform(modelTrans);
 
   return model;
 }
 
-static Model loadHouse() {
-  Model model = Model("models/sponza/sponza.obj");
+static auto loadHouse() {
+  auto model = make_shared<Model>("models/sponza/sponza.obj");
   glm::mat4 modelTrans = glm::mat4();
 
   modelTrans = glm::rotate(modelTrans, (float) (M_PI / 2.0), glm::vec3(0, 0, 1));
@@ -71,9 +66,22 @@ static Model loadHouse() {
   float scale = 1.0f;
   modelTrans = glm::scale(modelTrans, glm::vec3(scale, scale, scale));
 
-  model.SetTransform(modelTrans);
+  model->SetTransform(modelTrans);
 
   return model;
+}
+
+static auto loadScene() {
+  auto h = static_pointer_cast<Renderable>(loadHouse());
+  auto n = static_pointer_cast<Renderable>(loadNanosuit());
+  auto s = make_shared<Scene>();
+
+  vector<string> envFlags = {"env"};
+  vector<string> objFlags = {"obj"};
+  s->Add(h, glm::mat4(), envFlags);
+  s->Add(n, glm::mat4(), objFlags);
+
+  return s;
 }
 
 int sdlMain() {
@@ -92,7 +100,10 @@ int sdlMain() {
   checkErrors();
 
   auto camera = FPSCamera(); //RotationCamera();
-  auto model = loadHouse(); //loadNanosuit();
+  auto scene = loadScene();
+  //auto model = loadNanosuit();
+
+  glm::mat4 globalTrans;
 
   glm::mat4 viewTrans = glm::lookAt(
       glm::vec3(3.0f, 0.0f, 1.0f), // location of camera
@@ -113,12 +124,13 @@ int sdlMain() {
   };
 
   RenderScene renderScene = [&] (Uniforms u) {
-    model.Render(u);
-    checkErrors();
+    //model->Render(u, globalTrans);
+    scene->Render(u, {"env", "obj"});
   };
 
   BindScene bindScene = [&] (GLuint s) {
-    model.BindToShader(s);
+    //model->BindToShader(s);
+    scene->BindToShader(s, {"env", "obj"});
   };
 
   typedef function<Renderer(BindScene)> Generator;

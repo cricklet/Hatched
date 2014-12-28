@@ -141,7 +141,10 @@ void Mesh::BindToShader(GLuint shaderProgram) {
   }
 }
 
-void Mesh::Render(Uniforms uniforms) {
+void Mesh::Render(Uniforms uniforms, glm::mat4 parentTransform) {
+  auto transformVal = glm::value_ptr(parentTransform);
+  glUniformMatrix4fv(uniforms.get(MODEL_TRANS), 1, GL_FALSE, transformVal);
+
   // load the first texture
   GLint colorUnif = uniforms.get(COLOR);
   if (colorUnif != -1) {

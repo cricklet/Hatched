@@ -21,17 +21,19 @@ using namespace std;
 #include <assimp/postprocess.h>
 
 #include "helper.h"
+#include "renderable.h"
 #include "mesh.h"
 
-class Model {
+class Model : public Renderable {
  public:
   Model(string path, glm::mat4 transform = glm::mat4());
-  void Render(Uniforms uniforms);
+
+  void Render(Uniforms uniforms, glm::mat4 parentTransform);
   void BindToShader(GLuint shaderProgram);
+
   float GetSize();
   Bounds GetBounds();
   void SetTransform(glm::mat4 transform);
-  void AddMesh(shared_ptr<Mesh> m);
 
  private:
   vector<shared_ptr<Mesh>> meshes;

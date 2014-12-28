@@ -112,16 +112,11 @@ Model::Model(string path, glm::mat4 transform) {
   this->transform = transform;
 }
 
-void Model::AddMesh(shared_ptr<Mesh> m) {
-  this->meshes.push_back(m);
-}
-
-void Model::Render(Uniforms uniforms) {
-  auto transVal = glm::value_ptr(this->transform);
-  glUniformMatrix4fv(uniforms.get(MODEL_TRANS), 1, GL_FALSE, transVal);
+void Model::Render(Uniforms uniforms, glm::mat4 parentTransform) {
+  auto modelTransform = parentTransform * this->transform;
 
   for (auto m : this->meshes) {
-    m->Render(uniforms);
+    m->Render(uniforms, modelTransform);
     checkErrors();
   }
 }
