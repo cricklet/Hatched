@@ -51,20 +51,12 @@ static Model loadNanosuit() {
 
   model.SetTransform(modelTrans);
 
-  return model;
-}
-
-static Model loadCharacter() {
-  Model model = Model("models/minion/minion.obj");
-  glm::mat4 modelTrans = glm::mat4();
-
-  modelTrans = glm::translate(modelTrans, glm::vec3(0, 0, -0.5));
-  modelTrans = glm::rotate(modelTrans, (float) (M_PI / 2.0), glm::vec3(0, 0, 1));
-  modelTrans = glm::rotate(modelTrans, (float) (M_PI / 2.0), glm::vec3(1, 0, 0));
-  float scale = 1.0f / model.GetSize();
-  modelTrans = glm::scale(modelTrans, glm::vec3(scale, scale, scale));
-
-  model.SetTransform(modelTrans);
+  Bounds b = model.GetBounds();
+  model.AddMesh(generateCube(
+      b.minx - 30, b.miny, b.minz - 30,
+      b.maxx + 30, b.maxy + 10, b.maxz + 30,
+      true
+  ));
 
   return model;
 }
@@ -99,8 +91,8 @@ int sdlMain() {
   glewInit();
   checkErrors();
 
-  auto camera = FPSCamera();
-  auto model = loadHouse();
+  auto camera = FPSCamera(); //RotationCamera();
+  auto model = loadHouse(); //loadNanosuit();
 
   glm::mat4 viewTrans = glm::lookAt(
       glm::vec3(3.0f, 0.0f, 1.0f), // location of camera

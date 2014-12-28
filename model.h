@@ -29,7 +29,9 @@ class Model {
   void Render(Uniforms uniforms);
   void BindToShader(GLuint shaderProgram);
   float GetSize();
+  Bounds GetBounds();
   void SetTransform(glm::mat4 transform);
+  void AddMesh(shared_ptr<Mesh> m);
 
  private:
   vector<shared_ptr<Mesh>> meshes;

@@ -79,6 +79,10 @@ static float maxDimension(Bounds b) {
 }
 
 Model::Model(string path, glm::mat4 transform) {
+  if (path.length() == 0) {
+    return;
+  }
+
   Assimp::Importer importer;
   unsigned int flags = aiProcess_GenNormals | aiProcess_Triangulate | aiProcess_FlipUVs;
 
@@ -108,6 +112,10 @@ Model::Model(string path, glm::mat4 transform) {
   this->transform = transform;
 }
 
+void Model::AddMesh(shared_ptr<Mesh> m) {
+  this->meshes.push_back(m);
+}
+
 void Model::Render(Uniforms uniforms) {
   auto transVal = glm::value_ptr(this->transform);
   glUniformMatrix4fv(uniforms.get(MODEL_TRANS), 1, GL_FALSE, transVal);
@@ -120,6 +128,10 @@ void Model::Render(Uniforms uniforms) {
 
 float Model::GetSize() {
   return maxDimension(this->bounds);
+}
+
+Bounds Model::GetBounds() {
+  return this->bounds;
 }
 
 void Model::SetTransform(glm::mat4 transform) {

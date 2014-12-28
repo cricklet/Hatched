@@ -1,6 +1,86 @@
 #include "mesh.h"
 #include "helper.h"
 
+static float cube[] = {
+    -0.5,-0.5,-0.5, 0.0,0.0,-1.0, 0.0,0.0,
+    0.5,-0.5,-0.5, 0.0,0.0,-1.0, 1.0,0.0,
+    0.5,0.5,-0.5, 0.0,0.0,-1.0, 1.0,1.0,
+    0.5,0.5,-0.5, 0.0,0.0,-1.0, 1.0,1.0,
+    -0.5,0.5,-0.5, 0.0,0.0,-1.0, 0.0,1.0,
+    -0.5,-0.5,-0.5, 0.0,0.0,-1.0, 0.0,0.0,
+    -0.5,-0.5,0.5, 0.0,0.0,1.0, 0.0,0.0,
+    0.5,-0.5,0.5, 0.0,0.0,1.0, 1.0,0.0,
+    0.5,0.5,0.5, 0.0,0.0,1.0, 1.0,1.0,
+    0.5,0.5,0.5, 0.0,0.0,1.0, 1.0,1.0,
+    -0.5,0.5,0.5, 0.0,0.0,1.0, 0.0,1.0,
+    -0.5,-0.5,0.5, 0.0,0.0,1.0, 0.0,0.0,
+    -0.5,0.5,0.5, -1.0,0.0,0.0, 1.0,0.0,
+    -0.5,0.5,-0.5, -1.0,0.0,0.0, 1.0,1.0,
+    -0.5,-0.5,-0.5, -1.0,0.0,0.0, 0.0,1.0,
+    -0.5,-0.5,-0.5, -1.0,0.0,0.0, 0.0,1.0,
+    -0.5,-0.5,0.5, -1.0,0.0,0.0, 0.0,0.0,
+    -0.5,0.5,0.5, -1.0,0.0,0.0, 1.0,0.0,
+    0.5,0.5,0.5, 1.0,0.0,0.0, 1.0,0.0,
+    0.5,0.5,-0.5, 1.0,0.0,0.0, 1.0,1.0,
+    0.5,-0.5,-0.5, 1.0,0.0,0.0, 0.0,1.0,
+    0.5,-0.5,-0.5, 1.0,0.0,0.0, 0.0,1.0,
+    0.5,-0.5,0.5, 1.0,0.0,0.0, 0.0,0.0,
+    0.5,0.5,0.5, 1.0,0.0,0.0, 1.0,0.0,
+    -0.5,-0.5,-0.5, 0.0,-1.0,0.0, 0.0,1.0,
+    0.5,-0.5,-0.5, 0.0,-1.0,0.0, 1.0,1.0,
+    0.5,-0.5,0.5, 0.0,-1.0,0.0, 1.0,0.0,
+    0.5,-0.5,0.5, 0.0,-1.0,0.0, 1.0,0.0,
+    -0.5,-0.5,0.5, 0.0,-1.0,0.0, 0.0,0.0,
+    -0.5,-0.5,-0.5, 0.0,-1.0,0.0, 0.0,1.0,
+    -0.5,0.5,-0.5, 0.0,1.0,0.0, 0.0,1.0,
+    0.5,0.5,-0.5, 0.0,1.0,0.0, 1.0,1.0,
+    0.5,0.5,0.5, 0.0,1.0,0.0, 1.0,0.0,
+    0.5,0.5,0.5, 0.0,1.0,0.0, 1.0,0.0,
+    -0.5,0.5,0.5, 0.0,1.0,0.0, 0.0,0.0,
+    -0.5,0.5,-0.5, 0.0,1.0,0.0, 0.0,1.0, // pos, norm, uv
+};
+
+static int cubeVertices = 6*6;
+static int cubeVertexSize = 8;
+
+shared_ptr<Mesh> generateCube(float minX, float minY, float minZ,
+    float maxX, float maxY, float maxZ, bool flipNorms) {
+  vector<Vertex> vertices;
+  vector<GLuint> indices;
+
+  for (int i = 0; i < cubeVertices; i ++) {
+    int vertexOffset = cubeVertexSize * i;
+    float x = cube[vertexOffset + 0] < 0 ? minX : maxX;
+    float y = cube[vertexOffset + 1] < 0 ? minY : maxY;
+    float z = cube[vertexOffset + 2] < 0 ? minZ : maxZ;
+    float nx = cube[vertexOffset + 3];
+    float ny = cube[vertexOffset + 4];
+    float nz = cube[vertexOffset + 5];
+    float ux = cube[vertexOffset + 6];
+    float uy = cube[vertexOffset + 7];
+
+    if (flipNorms) {
+      nx *= -1;
+      ny *= -1;
+      nz *= -1;
+    }
+
+    { // scale uv's
+
+    }
+
+    Vertex v;
+    v.position = glm::vec3(x,y,z);
+    v.normal= glm::vec3(nx,ny,nz);
+    v.uv = glm::vec2(ux,uy);
+    vertices.push_back(v);
+
+    indices.push_back(i);
+  }
+
+  return make_shared<Mesh>(vertices, indices);
+}
+
 Mesh::Mesh(const vector<Vertex> vertices, vector<GLuint> indices) {
   this->vertices = vertices;
   cout << "Created mesh with # " << vertices.size() << " vertices.\n";

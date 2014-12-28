@@ -14,6 +14,7 @@
 #include <GL/glew.h>
 
 #include <string>
+#include <memory>
 #include <vector>
 using namespace std;
 
@@ -52,5 +53,10 @@ private:
   GLuint vao, vbo, ebo;
   glm::vec3 color;
 };
+
+shared_ptr<Mesh> generateCube(
+    float minX, float minY, float minZ,
+    float maxX, float maxY, float maxZ,
+    bool flipNorms = false);
 
 #endif
