@@ -20,13 +20,10 @@ const string INV_PROJ_TRANS = "unifInvProjTrans";
 const string USE_TEXTURE = "unifUseTexture";
 const string COLOR = "unifColor";
 const string TEXTURE = "unifTexture";
-const string TEST_TEXTURE = "unifTestTexture";
-
 const string NUM_TILES = "unifNumTiles"; // for old hatching shader
-const string TILES_TEXTURE = "unifTilesTexture"; // for old hatching shader
-
-const string HATCH_TEXTURES = "unifHatchTextures";
-
+const string NUM_MIPS = "unifNumMips"; // for new hatching shader
+const string NUM_TONES = "unifNumTones";
+const string TILES_TEXTURE = "unifTilesTexture";
 const string LIGHT_DIR = "unifLightDir";
 const string DEPTHS = "unifDepths";
 const string POSITIONS = "unifPositions";
