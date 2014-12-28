@@ -56,9 +56,7 @@ Renderer generateSSAORenderer(BindScene bindScene) {
   auto noiseTexture = make_shared<Texture>("noise.png");
   checkErrors();
 
-  int numTones = 5;
-  int numMips = 4;
-  auto tilesTexture = make_shared<Texture>("mipped_hatches.png");
+  auto testTexture = make_shared<Texture>("hatch_1.jpg");
   checkErrors();
 
   // The first shader renders normals/positions/uv to an fbo
@@ -95,7 +93,8 @@ Renderer generateSSAORenderer(BindScene bindScene) {
   GLuint hatchShader = generateShaderProgram("render_buffer.vert", "deferred_hatched.frag");
   Uniforms hatchUniforms;
   hatchUniforms.add(hatchShader, {
-      NUM_MIPS, NUM_TONES, TILES_TEXTURE,
+      HATCH_TEXTURES,
+      TEST_TEXTURE,
       POSITIONS, NORMALS, UVS,
       BUFFER,
       LIGHT_DIR,
@@ -160,9 +159,8 @@ Renderer generateSSAORenderer(BindScene bindScene) {
       glm::vec3 lightDir = glm::vec3(-1,-1,-1);
       glUniform3fv(hatchUniforms.get(LIGHT_DIR), 1, glm::value_ptr(lightDir));
 
-      glUniform1i(hatchUniforms.get(NUM_TONES), numTones);
-      glUniform1i(hatchUniforms.get(NUM_MIPS), numMips);
-      glUniform1i(hatchUniforms.get(TILES_TEXTURE), tilesTexture->index);
+      glUniform1iv(hatchUniforms.get(HATCH_TEXTURES), tilesTexture->index);
+      glUniform1i(hatchUniforms.get(TEST_TEXTURE), testTexture->index);
 
       glUniform1i(hatchUniforms.get(POSITIONS), gFBO->GetAttachmentIndex(0));
       glUniform1i(hatchUniforms.get(NORMALS), gFBO->GetAttachmentIndex(1));

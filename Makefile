@@ -17,4 +17,5 @@ main: $(OBJ_FILES)
 
 clean:
 	@- rm -f *.o
+	@- rm -f *.d
 	@- rm -f main
