@@ -18,10 +18,10 @@ uniform vec3 unifLightDir;
 
 uniform sampler2D unifRandom; // stores a texture of random values
 
-const float RADIUS = 0.05;
-const int SAMPLES = 24;
+const float HEMI_RADIUS = 0.05;
+const int HEMI_SAMPLES = 24;
 
-const vec3 SAMPLE_HEMI [SAMPLES] = vec3 [SAMPLES]
+const vec3 HEMI [] = vec3 []
   (vec3(0.015389, -0.009998, 0.025293),
    vec3(0.015600, -0.006110, 0.060213),
    vec3(0.063122, -0.057304, 0.039000),
@@ -46,6 +46,28 @@ const vec3 SAMPLE_HEMI [SAMPLES] = vec3 [SAMPLES]
    vec3(0.491444, -0.194473, 0.439681),
    vec3(0.655396, 0.232571, 0.181573),
    vec3(0.210937, 0.536386, 0.479892));
+
+const float DISK_MAX_DIST = 5;
+const vec2 DISK_RADIUS = vec2(0.008, 0.006);
+const int DISK_SAMPLES = 16;
+const vec2 DISK[] = vec2[] // These are the Poisson Disk Samples
+  (
+   vec2( -0.94201624,  -0.39906216 ),
+   vec2(  0.94558609,  -0.76890725 ),
+   vec2( -0.094184101, -0.92938870 ),
+   vec2(  0.34495938,   0.29387760 ),
+   vec2( -0.91588581,   0.45771432 ),
+   vec2( -0.81544232,  -0.87912464 ),
+   vec2( -0.38277543,   0.27676845 ),
+   vec2(  0.97484398,   0.75648379 ),
+   vec2(  0.44323325,  -0.97511554 ),
+   vec2(  0.53742981,  -0.47373420 ),
+   vec2( -0.26496911,  -0.41893023 ),
+   vec2(  0.79197514,   0.19090188 ),
+   vec2( -0.24188840,   0.99706507 ),
+   vec2( -0.81409955,   0.91437590 ),
+   vec2(  0.19984126,   0.78641367 ),
+   vec2(  0.14383161,  -0.14100790 ));
 
 mat3x3 getRotationMatrix(vec3 surfaceNormal, vec3 randomNormal) {
   vec3 tangent = normalize(randomNormal - surfaceNormal * dot(randomNormal, surfaceNormal));
@@ -79,50 +101,85 @@ void main() {
   vec3 vNorm = normWorldToView(wNorm);
   float vDepth = length(vPos);
 
-  // the farther the sample, the smaller the sphere of influence
-  float radius = RADIUS / max(vDepth, 1);
+  float disk_occlusion = 0.0f;
+  {
+    float random = texture(unifRandom, sCoord * mat2x2(24,0,0,16)).r * 2 * 3.14159;
+    mat2x2 randomRotation = mat2x2
+      (cos(random), -sin(random),
+       sin(random), cos(random));
 
-  // reflect each sample on a random plane
-  vec3 randomNormal = texture(unifRandom, sCoord * mat2x2(24,0,0,16)).xyz;
-  randomNormal = normalize(randomNormal - vec3(0.5,0.5,0.5));
-  mat3x3 randomRotation = getRotationMatrix(vNorm, randomNormal);
+    outFragColor = vec4(0,0,0,1);
 
-  float occlusion = 0.0f;
-  int samples = 0;
-
-  outFragColor = vec4(0,0,0,1);
-
-  vec3 avgRay = vec3(0,0,0);
-  for (int i = 0; i < SAMPLES; i ++) {
-    vec3 vRay = SAMPLE_HEMI[i];
-    vRay = radius * randomRotation * vRay;
-
-    avgRay += vRay;
+    vec3 avgRay = vec3(0,0,0);
+    for (int i = 0; i < DISK_SAMPLES; i ++) {
+      vec2 sRay = randomRotation * DISK[i] * DISK_RADIUS;
+      vec2 sSampleCoord = clamp(sCoord + sRay, 0,1);
     
-    // where the ray ends up
-    vec3 vPos0 = vPos + vRay;
-    float vDepth0 = length(vPos0);
+      vec3 wSamplePos = texture(unifPositions, sSampleCoord).xyz;
+      vec3 wSampleNorm = normalize(texture(unifNormals, sSampleCoord).xyz);
 
-    // what's actually there
-    vec2 sCoord1 = posViewToScreen(vPos0);
-    if (sCoord1.x < 0 || sCoord1.y < 0 || sCoord1.x > 1 || sCoord1.y > 1) {
-      outFragColor = vec4(1,0,0,1);
-      continue;
+      vec3 vSamplePos = posWorldToView(wSamplePos);
+      vec3 vSampleNorm = normWorldToView(wSampleNorm);
+      float vSampleDepth = length(vSamplePos);
+    
+      vec3 vSampleDir = normalize(vSamplePos - vPos);
+
+      if (abs(vSampleDepth - vDepth) > 0.05) continue;
+
+      // angle between SURFACE-NORMAL and SAMPLE-DIRECTION (vector from SURFACE-POSITION to SAMPLE-POSITION)
+      float NdotS = max(dot(vNorm, vSampleDir), 0);
+      // distance between SURFACE-POSITION and SAMPLE-POSITION
+      float VPdistSP = distance(vPos, vSamplePos);
+
+      // a = distance function
+      float a = 1.0 - smoothstep(DISK_MAX_DIST, DISK_MAX_DIST * 2, VPdistSP);
+      // b = dot-Product
+      float b = NdotS;
+
+      disk_occlusion += (a * b);
     }
+  }
 
-    vec3 wPos1 = texture(unifPositions, sCoord1).xyz;
-    if (wPos1.x == 0 && wPos1.y == 0 && wPos1.z == 0) continue;
+  float hemi_occlusion = 0.0f;
+  {
+    // reflect each sample on a random plane
+    vec3 randomNormal = texture(unifRandom, sCoord * mat2x2(24,0,0,16)).xyz;
+    randomNormal = normalize(randomNormal - vec3(0.5,0.5,0.5));
+    mat3x3 randomRotation = getRotationMatrix(vNorm, randomNormal);
 
-    vec3 vPos1 = posWorldToView(wPos1);
-    float vDepth1 = length(vPos1);
+    float radius = HEMI_RADIUS / max(vDepth, 1);
 
-    if (abs(vDepth1 - vDepth) < 2 * radius) {
-      if (vDepth1 <= vDepth0) {
-	occlusion += 1.0;
+    for (int i = 0; i < HEMI_SAMPLES; i ++) {
+      vec3 vRay = HEMI[i];
+      vRay = radius * randomRotation * vRay;
+
+      // where the ray ends up
+      vec3 vPos0 = vPos + vRay;
+      float vDepth0 = length(vPos0);
+
+      // what's actually there
+      vec2 sCoord1 = posViewToScreen(vPos0);
+      if (sCoord1.x < 0 || sCoord1.y < 0 || sCoord1.x > 1 || sCoord1.y > 1) {
+	outFragColor = vec4(1,0,0,1);
+	continue;
+      }
+
+      vec3 wPos1 = texture(unifPositions, sCoord1).xyz;
+      if (wPos1.x == 0 && wPos1.y == 0 && wPos1.z == 0) continue;
+
+      vec3 vPos1 = posWorldToView(wPos1);
+      float vDepth1 = length(vPos1);
+
+      if (abs(vDepth1 - vDepth) < 2 * radius) {
+	if (vDepth1 <= vDepth0) {
+	  hemi_occlusion += 1.0;
+	}
       }
     }
   }
 
-  float light = 1 - occlusion / SAMPLES;
+  float light = 1
+    - 0.5 * disk_occlusion / DISK_SAMPLES
+    - 0.5 * hemi_occlusion / HEMI_SAMPLES;
   outFragColor = vec4(light, light, light, 1.0);
 }

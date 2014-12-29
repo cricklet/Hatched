@@ -6,7 +6,7 @@ out vec4 outFragColor;
 uniform sampler2D unifDepths;
 uniform sampler2D unifBuffer;
 
-const float BLUR_RADIUS = 0.002;
+const float BLUR_RADIUS = 0.0005;
 
 void main () {
   vec2 origin = outVertBufferCoord;
