@@ -80,7 +80,7 @@ void main() {
   float vDepth = length(vPos);
 
   // the farther the sample, the smaller the sphere of influence
-  float radius = RADIUS / vDepth;
+  float radius = RADIUS / max(vDepth, 1);
 
   // reflect each sample on a random plane
   vec3 randomNormal = texture(unifRandom, sCoord * mat2x2(24,0,0,16)).xyz;

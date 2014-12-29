@@ -25,6 +25,8 @@ public:
 private:
   vector<SceneObject> objects;
   vector<glm::vec3> lightPositions;
+  vector<glm::vec3> lightConstants;
+  vector<glm::vec3> lightColors;
   glm::mat4 sceneTransform;
 };
 

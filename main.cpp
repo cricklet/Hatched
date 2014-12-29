@@ -64,14 +64,6 @@ static auto loadScene() {
   vector<string> objFlags = {"obj"};
 
   scene->AddLight(glm::vec3(0,0,1.5));
-  scene->AddLight(glm::vec3(4,4,1.5));
-  scene->AddLight(glm::vec3(2,6,1.5));
-  scene->AddLight(glm::vec3(-3,-3,1.5));
-  scene->AddLight(glm::vec3(-5,-1,1.5));
-  scene->AddLight(glm::vec3(-3,2,1.5));
-  scene->AddLight(glm::vec3(-1,5,1.5));
-  scene->AddLight(glm::vec3(3,-5,1.5));
-  scene->AddLight(glm::vec3(4,-2,1.5));
 
   auto addShape = [&] (Shape s, glm::mat4 t) {
     for (int i = 0; i < s.meshes.size(); i ++) {

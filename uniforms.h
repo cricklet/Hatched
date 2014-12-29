@@ -36,6 +36,8 @@ const string HATCH5_TEXTURE = "unifHatch5";
 const string LIGHT_DIR = "unifLightDir";
 
 const string LIGHT_POSITIONS = "unifLightPositions";
+const string LIGHT_CONSTANTS= "unifLightConstants";
+const string LIGHT_COLORS = "unifLightColors";
 const string NUM_LIGHTS = "unifNumLights";
 
 const string DEPTHS = "unifDepths";
@@ -43,6 +45,9 @@ const string POSITIONS = "unifPositions";
 const string NORMALS = "unifNormals";
 const string UVS = "unifUVs";
 
+const string SCALE = "unifScale";
+const string OFFSET_X= "unifOffsetX";
+const string OFFSET_Y = "unifOffsetY";
 const string BUFFER = "unifBuffer";
 
 const string RANDOM = "unifRandom";

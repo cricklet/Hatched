@@ -10,8 +10,8 @@ using namespace std;
 #define GLEW_STATIC
 #include <GL/glew.h>
 
-const int WIDTH = 640;
-const int HEIGHT = 480;
+const int WIDTH = 1024;
+const int HEIGHT = 768;
 
 float random(float max);
 

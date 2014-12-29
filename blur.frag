@@ -6,7 +6,7 @@ out vec4 outFragColor;
 uniform sampler2D unifDepths;
 uniform sampler2D unifBuffer;
 
-const float BLUR_RADIUS = 0.001;
+const float BLUR_RADIUS = 0.002;
 
 void main () {
   vec2 origin = outVertBufferCoord;
@@ -20,7 +20,7 @@ void main () {
       sample = clamp(sample, 0,1);
       float sampleDepth = texture(unifDepths, sample).r;
       
-      if (abs(depth - sampleDepth) > 0.005) continue;
+      if (abs(depth - sampleDepth) > 0.001) continue;
       
       result += texture(unifBuffer, sample);
       samples += 1;
