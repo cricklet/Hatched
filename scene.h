@@ -7,17 +7,27 @@ using namespace std;
 #ifndef SCENE_SCENE_H_
 #define SCENE_SCENE_H_
 
+struct SceneObject {
+  shared_ptr<Renderable> renderable;
+  glm::mat4 transform;
+  vector<string> flags;
+};
+
+struct SceneLight {
+  glm::vec3 position;
+};
+
 class Scene {
 public:
   Scene();
-  void Add(shared_ptr<Renderable> child, glm::mat4 transform, vector<string> flags);
+  void AddObject(shared_ptr<Renderable> child, glm::mat4 transform, vector<string> flags);
+  void AddLight(glm::vec3 position);
   void Render(Uniforms uniforms, vector<string> flags);
   void BindToShader(GLuint shader, vector<string> flags);
 
 private:
-  vector<shared_ptr<Renderable>> objects;
-  vector<glm::mat4> objectTransforms;
-  vector<vector<string>> objectFlags;
+  vector<SceneObject> objects;
+  vector<SceneLight> lights;
 
   glm::mat4 sceneTransform;
 };

@@ -1,17 +1,27 @@
 #include "scene.h"
 
 Scene::Scene() {
+  sceneTransform = glm::mat4();
 };
 
-void Scene::Add(
+void Scene::AddObject(
     shared_ptr<Renderable> obj,
     glm::mat4 transform,
     vector<string> flags) {
-  objects.push_back(obj);
-  objectTransforms.push_back(transform);
-  objectFlags.push_back(flags);
+  SceneObject o;
+  o.renderable = obj;
+  o.transform = transform;
+  o.flags = flags;
 
-  sceneTransform = glm::mat4();
+  objects.push_back(o);
+}
+
+void Scene::AddLight(
+    glm::vec3 position) {
+  SceneLight l;
+  l.position = position;
+
+  lights.push_back(l);
 }
 
 static bool hasOverlap(auto v1, auto v2) {
@@ -24,20 +34,20 @@ static bool hasOverlap(auto v1, auto v2) {
 }
 
 void Scene::Render(Uniforms uniforms, vector<string> flags) {
-  for (int i = 0; i < objects.size(); i ++) {
-    bool shouldRender = hasOverlap(flags, objectFlags[i]);
+  for (auto o : objects) {
+    bool shouldRender = hasOverlap(flags, o.flags);
     if (!shouldRender) continue;
 
-    glm::mat4 transform = sceneTransform * objectTransforms[i];
-    objects[i]->Render(uniforms, transform);
+    glm::mat4 transform = sceneTransform * o.transform;
+    o.renderable->Render(uniforms, transform);
   }
 }
 
 void Scene::BindToShader(GLuint shader, vector<string> flags) {
-  for (int i = 0; i < objects.size(); i ++) {
-    bool shouldBind = hasOverlap(flags, objectFlags[i]);
+  for (auto o : objects) {
+    bool shouldBind = hasOverlap(flags, o.flags);
     if (!shouldBind) continue;
 
-    objects[i]->BindToShader(shader);
+    o.renderable->BindToShader(shader);
   }
 }

@@ -58,20 +58,67 @@ static auto loadNanosuit() {
 }
 
 static auto loadScene() {
-  auto nano = static_pointer_cast<Renderable>(loadNanosuit());
-  auto nanoTrans = glm::mat4();
-
   auto scene = make_shared<Scene>();
 
   vector<string> envFlags = {"env"};
   vector<string> objFlags = {"obj"};
 
-  scene->Add(nano, glm::mat4(), objFlags);
+  auto addShape = [&] (Shape s, glm::mat4 t) {
+    for (int i = 0; i < s.meshes.size(); i ++) {
+      scene->AddObject(s.meshes[i], t * s.transforms[i], objFlags);
+    }
+  };
 
-  auto plane = generatePlane(10);
-  auto planeTrans = glm::translate(glm::mat4(), glm::vec3(0,0,-0.5));
-  for (int i = 0; i < plane.meshes.size(); i ++) {
-    scene->Add(plane.meshes[i], planeTrans * plane.transforms[i], envFlags);
+  {
+    auto nano = static_pointer_cast<Renderable>(loadNanosuit());
+    auto nanoTrans = glm::translate(glm::mat4(), glm::vec3(-2, -2, -0.5));
+    scene->AddObject(nano, nanoTrans, objFlags);
+  }
+
+  {
+    auto box = generateBox(16,16,2, false, true);
+    auto boxTrans = glm::translate(glm::mat4(), glm::vec3(0,0,0));
+    addShape(box, boxTrans);
+  }
+
+  {
+    auto box = generateBox(0.5,0.5,0.5);
+    auto boxTrans = glm::mat4();
+    boxTrans *= glm::translate(glm::mat4(), glm::vec3(-2,0,-0.75));
+    boxTrans *= glm::rotate(glm::mat4(), 1.0f, glm::vec3(0,0,1));
+    addShape(box, boxTrans);
+  }
+
+  {
+    auto box = generateBox(0.5,0.5,0.5);
+    auto boxTrans = glm::mat4();
+    boxTrans *= glm::translate(glm::mat4(), glm::vec3(-2.2,0.7,-0.75));
+    boxTrans *= glm::rotate(glm::mat4(), 0.5f, glm::vec3(0,0,1));
+    addShape(box, boxTrans);
+  }
+
+  {
+    auto box = generateBox(0.5,0.5,0.5);
+    auto boxTrans = glm::mat4();
+    boxTrans *= glm::translate(glm::mat4(), glm::vec3(-2.7,0.2,-0.75));
+    boxTrans *= glm::rotate(glm::mat4(), 0.1f, glm::vec3(0,0,1));
+    addShape(box, boxTrans);
+  }
+
+  {
+    auto box = generateBox(0.5,0.5,0.5);
+    auto boxTrans = glm::mat4();
+    boxTrans *= glm::translate(glm::mat4(), glm::vec3(-2.3,0.4,-0.25));
+    boxTrans *= glm::rotate(glm::mat4(), 0.2f, glm::vec3(0,0,1));
+    addShape(box, boxTrans);
+  }
+
+  {
+    auto box = generateBox(2,3,1);
+    auto boxTrans = glm::mat4();
+    boxTrans *= glm::translate(glm::mat4(), glm::vec3(-3,5,-0.5));
+    boxTrans *= glm::rotate(glm::mat4(), 0.3f, glm::vec3(0,0,1));
+    addShape(box, boxTrans);
   }
 
   return scene;

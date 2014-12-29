@@ -89,7 +89,7 @@ Renderer generateSSAORenderer(BindScene bindScene) {
   GLuint blurShader = generateShaderProgram("render_buffer.vert", "blur.frag");
   Uniforms blurUniforms;
   blurUniforms.add(blurShader, {
-      BUFFER
+      BUFFER, DEPTHS
   });
   ssaoFBO->BindToShader(blurShader);
   checkErrors();
@@ -151,6 +151,7 @@ Renderer generateSSAORenderer(BindScene bindScene) {
       glBindFramebuffer(GL_FRAMEBUFFER, blurFBO->GetFrameBuffer());
 
       glUniform1i(blurUniforms.get(BUFFER), ssaoFBO->GetAttachmentIndex(0));
+      glUniform1i(blurUniforms.get(DEPTHS), gFBO->GetDepthIndex());
       checkErrors();
 
       ssaoFBO->Render();

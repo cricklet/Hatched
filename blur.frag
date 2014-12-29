@@ -2,17 +2,27 @@
 
 in vec2 outVertBufferCoord;
 out vec4 outFragColor;
+
+uniform sampler2D unifDepths;
 uniform sampler2D unifBuffer;
 
-const float BLUR_RADIUS = 0.0015;
+const float BLUR_RADIUS = 0.001;
 
 void main () {
-  vec4 result = vec4(0,0,0,1);
+  vec2 origin = outVertBufferCoord;
+  float depth = texture(unifDepths, origin).r;
+
+  vec4 result = vec4(0,0,0,1); 
   int samples = 0;
   for (int x = -4; x <= 4; x ++) {
     for (int y = -4; y <= 4; y ++) {
-      vec2 coord = outVertBufferCoord + vec2(x, y) * BLUR_RADIUS;
-      result += texture(unifBuffer, coord);
+      vec2 sample = origin + vec2(x, y) * BLUR_RADIUS;
+      sample = clamp(sample, 0,1);
+      float sampleDepth = texture(unifDepths, sample).r;
+      
+      if (abs(depth - sampleDepth) > 0.005) continue;
+      
+      result += texture(unifBuffer, sample);
       samples += 1;
     }
   }

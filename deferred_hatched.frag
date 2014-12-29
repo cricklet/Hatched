@@ -75,9 +75,10 @@ void main() {
   float hardSSAO = 1 - 4 * (1 - ssao);
   float lightSSAO = 1 - 2 * (1 - ssao);
 
-  drawHatching(1 - clamp(2 - hardSSAO - light, 0,1), uv);
+  drawHatching(clamp(hardSSAO, 0,1), uv);
 
-  //outFragColor = vec4(1,1,1,1);
-  //outFragColor -= vec4(1 - lightSSAO, 1 - lightSSAO, 1 - lightSSAO, 1);
+  outFragColor = vec4(1,1,1,1);
+  outFragColor -= vec4(1 - lightSSAO, 1 - lightSSAO, 1 - lightSSAO, 1);
+  //outFragColor -= vec4(1 - hardSSAO, 1 - hardSSAO, 1 - hardSSAO, 1);
   outFragColor -= vec4(1 - light, 1 - light, 1 - light, 1);
 }

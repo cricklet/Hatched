@@ -7,3 +7,5 @@ lambda is essentially a struct
 *always* use unique_ptr or shared_ptr OR allocate on stack.
 disable copying on any gl related class
 disable copying on anything that has a destructor
+
+d85c742ad482c67b6244560a0b40b354bb2bcf7b <= commit to remember
