@@ -44,12 +44,13 @@ Renderer::ShouldUpdate() {
 
 Renderer::Renderer(
     vector<string> s,
-    function<void(SetupScene, RenderScene)> r,
+    function<void(SetupScene, LightScene, RenderScene)> r,
     long int t)
 : sources(s), Render(r), loadTime(t) {};
 
 Renderer generateSSAORenderer(BindScene bindScene) {
   auto gFBO = make_shared<FBO>(WIDTH, HEIGHT);
+  auto lightingFBO = make_shared<FBO>(WIDTH, HEIGHT);
   auto ssaoFBO = make_shared<FBO>(WIDTH, HEIGHT);
   auto blurFBO = make_shared<FBO>(WIDTH, HEIGHT);
 
@@ -64,7 +65,7 @@ Renderer generateSSAORenderer(BindScene bindScene) {
   auto hatch5Texture = make_shared<Texture>("hatch_5.jpg");
   checkErrors();
 
-  // The first shader renders normals/positions/uv to an fbo
+  // Renders normals/positions/uv to an fbo
   GLuint gShader = generateShaderProgram("gbuffer.vert", "gbuffer.frag");
   Uniforms gUniforms;
   gUniforms.add(gShader, {
@@ -73,7 +74,18 @@ Renderer generateSSAORenderer(BindScene bindScene) {
   bindScene(gShader);
   checkErrors();
 
-  // The second shader computes ssao from the previous fbo
+  // Render lighting to an fbo
+  GLuint lightShader = generateShaderProgram("render_buffer.vert", "deferred_lighting.frag");
+  Uniforms lightUniforms;
+  lightUniforms.add(lightShader, {
+      LIGHT_POSITIONS, NUM_LIGHTS,
+      POSITIONS, NORMALS,
+      LIGHT_DIR,
+  });
+  gFBO->BindToShader(lightShader);
+  checkErrors();
+
+  // Computes ssao from the previous fbo
   GLuint ssaoShader = generateShaderProgram("render_buffer.vert", "deferred_ssao.frag");
   Uniforms ssaoUniforms;
   ssaoUniforms.add(ssaoShader, {
@@ -85,7 +97,7 @@ Renderer generateSSAORenderer(BindScene bindScene) {
   gFBO->BindToShader(ssaoShader);
   checkErrors();
 
-  // The third shader blurs the ssao
+  // Blur the ssao
   GLuint blurShader = generateShaderProgram("render_buffer.vert", "blur.frag");
   Uniforms blurUniforms;
   blurUniforms.add(blurShader, {
@@ -94,7 +106,7 @@ Renderer generateSSAORenderer(BindScene bindScene) {
   ssaoFBO->BindToShader(blurShader);
   checkErrors();
 
-  // The fourth shader computes the hatched ssao
+  // Renders the hatched ssao
   GLuint hatchShader = generateShaderProgram("render_buffer.vert", "deferred_hatched.frag");
   Uniforms hatchUniforms;
   hatchUniforms.add(hatchShader, {
@@ -110,12 +122,14 @@ Renderer generateSSAORenderer(BindScene bindScene) {
 
   vector<string> sources = {
       "gbuffer.vert", "gbuffer.frag",
-      "render_buffer.vert", "deferred_ssao.frag",
+      "render_buffer.vert",
+      "deferred_lighting.frag",
+      "deferred_ssao.frag",
       "blur.frag",
       "deferred_hatched.frag"
   };
   long int t = getModifiedTime(sources);
-  auto render = [=] (SetupScene setupScene, RenderScene renderScene) {
+  auto render = [=] (SetupScene setupScene, LightScene lightScene, RenderScene renderScene) {
     { // gbuffer render pass
       glUseProgram(gShader);
       glBindFramebuffer(GL_FRAMEBUFFER, gFBO->GetFrameBuffer());
@@ -129,7 +143,24 @@ Renderer generateSSAORenderer(BindScene bindScene) {
       checkErrors();
     }
 
-    { // ssao render pass
+    { // lighting render pass
+      glUseProgram(lightShader);
+      glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+      glEnable(GL_DEPTH_TEST);
+      clearActiveBuffer(0,0,0,0, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+      glUniform1i(lightUniforms.get(POSITIONS), gFBO->GetAttachmentIndex(0));
+      glUniform1i(lightUniforms.get(NORMALS), gFBO->GetAttachmentIndex(1));
+
+      lightScene(lightUniforms);
+
+      // render scene
+      gFBO->Render();
+      checkErrors();
+    }
+
+    /*{ // ssao render pass
       glUseProgram(ssaoShader);
       glBindFramebuffer(GL_FRAMEBUFFER, ssaoFBO->GetFrameBuffer());
 
@@ -182,7 +213,7 @@ Renderer generateSSAORenderer(BindScene bindScene) {
 
       blurFBO->Render();
       checkErrors();
-    }
+    }*/
   };
 
   return Renderer(sources, render, t);
@@ -197,7 +228,7 @@ Renderer generateSimpleRenderer(BindScene bindScene) {
       MODEL_TRANS, VIEW_TRANS, PROJ_TRANS, COLOR
   });
 
-  auto render = [=] (SetupScene setupScene, RenderScene renderScene) {
+  auto render = [=] (SetupScene setupScene, LightScene lightScene, RenderScene renderScene) {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(shader);
 
@@ -206,6 +237,7 @@ Renderer generateSimpleRenderer(BindScene bindScene) {
     checkErrors();
 
     setupScene(uniforms);
+    lightScene(uniforms);
     renderScene(uniforms);
     checkErrors();
   };

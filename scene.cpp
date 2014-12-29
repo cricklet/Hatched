@@ -16,12 +16,8 @@ void Scene::AddObject(
   objects.push_back(o);
 }
 
-void Scene::AddLight(
-    glm::vec3 position) {
-  SceneLight l;
-  l.position = position;
-
-  lights.push_back(l);
+void Scene::AddLight(glm::vec3 position) {
+  this->lightPositions.push_back(position);
 }
 
 static bool hasOverlap(auto v1, auto v2) {
@@ -31,6 +27,16 @@ static bool hasOverlap(auto v1, auto v2) {
         return true;
 
   return false;
+}
+
+void Scene::Light(Uniforms uniforms) {
+  auto posValues = reinterpret_cast<GLfloat *>(this->lightPositions.data());
+  int numLights = this->lightPositions.size();
+  glUniform1i(uniforms.get(NUM_LIGHTS), numLights);
+  glUniform3fv(uniforms.get(LIGHT_POSITIONS), numLights, posValues);
+
+  glm::vec3 lightDir = glm::vec3(-0.3,-0.5,-1);
+  glUniform3fv(uniforms.get(LIGHT_DIR), 1, glm::value_ptr(lightDir));
 }
 
 void Scene::Render(Uniforms uniforms, vector<string> flags) {

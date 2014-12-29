@@ -13,22 +13,18 @@ struct SceneObject {
   vector<string> flags;
 };
 
-struct SceneLight {
-  glm::vec3 position;
-};
-
 class Scene {
 public:
   Scene();
   void AddObject(shared_ptr<Renderable> child, glm::mat4 transform, vector<string> flags);
   void AddLight(glm::vec3 position);
   void Render(Uniforms uniforms, vector<string> flags);
+  void Light(Uniforms uniforms);
   void BindToShader(GLuint shader, vector<string> flags);
 
 private:
   vector<SceneObject> objects;
-  vector<SceneLight> lights;
-
+  vector<glm::vec3> lightPositions;
   glm::mat4 sceneTransform;
 };
 

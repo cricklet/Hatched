@@ -29,6 +29,7 @@ using namespace std;
 #define RENDERER_H_
 
 typedef function<void(Uniforms)> SetupScene;
+typedef function<void(Uniforms)> LightScene;
 typedef function<void(Uniforms)> RenderScene;
 typedef function<void(GLuint)> BindScene;
 
@@ -36,11 +37,11 @@ class Renderer {
 public:
   Renderer(
       vector<string> s,
-      function<void(SetupScene, RenderScene)> r,
+      function<void(SetupScene, LightScene, RenderScene)> r,
       long int t
   );
   bool ShouldUpdate();
-  function<void(SetupScene, RenderScene)> Render;
+  function<void(SetupScene, LightScene, RenderScene)> Render;
 
 private:
   vector<string> sources;

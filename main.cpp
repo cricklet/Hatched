@@ -63,6 +63,16 @@ static auto loadScene() {
   vector<string> envFlags = {"env"};
   vector<string> objFlags = {"obj"};
 
+  scene->AddLight(glm::vec3(0,0,1.5));
+  scene->AddLight(glm::vec3(4,4,1.5));
+  scene->AddLight(glm::vec3(2,6,1.5));
+  scene->AddLight(glm::vec3(-3,-3,1.5));
+  scene->AddLight(glm::vec3(-5,-1,1.5));
+  scene->AddLight(glm::vec3(-3,2,1.5));
+  scene->AddLight(glm::vec3(-1,5,1.5));
+  scene->AddLight(glm::vec3(3,-5,1.5));
+  scene->AddLight(glm::vec3(4,-2,1.5));
+
   auto addShape = [&] (Shape s, glm::mat4 t) {
     for (int i = 0; i < s.meshes.size(); i ++) {
       scene->AddObject(s.meshes[i], t * s.transforms[i], objFlags);
@@ -163,6 +173,11 @@ int sdlMain() {
     checkErrors();
   };
 
+  SetupScene lightScene = [&] (Uniforms u) {
+    scene->Light(u);
+    checkErrors();
+  };
+
   RenderScene renderScene = [&] (Uniforms u) {
     //model->Render(u, globalTrans);
     scene->Render(u, {"env", "obj"});
@@ -244,7 +259,7 @@ int sdlMain() {
     camera.Think(dt);
     checkErrors();
 
-    renderer.Render(setupScene, renderScene);
+    renderer.Render(setupScene, lightScene, renderScene);
     checkErrors();
 
     SDL_GL_SwapWindow(window);

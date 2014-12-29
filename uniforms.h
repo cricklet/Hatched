@@ -15,8 +15,10 @@ using namespace std;
 const string MODEL_TRANS = "unifModelTrans";
 const string VIEW_TRANS = "unifViewTrans";
 const string PROJ_TRANS = "unifProjTrans";
+
 const string INV_VIEW_TRANS = "unifInvViewTrans";
 const string INV_PROJ_TRANS = "unifInvProjTrans";
+
 const string USE_TEXTURE = "unifUseTexture";
 const string COLOR = "unifColor";
 const string TEXTURE = "unifTexture";
@@ -32,11 +34,17 @@ const string HATCH4_TEXTURE = "unifHatch4";
 const string HATCH5_TEXTURE = "unifHatch5";
 
 const string LIGHT_DIR = "unifLightDir";
+
+const string LIGHT_POSITIONS = "unifLightPositions";
+const string NUM_LIGHTS = "unifNumLights";
+
 const string DEPTHS = "unifDepths";
 const string POSITIONS = "unifPositions";
 const string NORMALS = "unifNormals";
-const string BUFFER = "unifBuffer";
 const string UVS = "unifUVs";
+
+const string BUFFER = "unifBuffer";
+
 const string RANDOM = "unifRandom";
 
 class Uniforms {
