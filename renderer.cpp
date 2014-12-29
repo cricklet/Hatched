@@ -28,7 +28,7 @@ static void clearActiveBuffer(
     float b = 1,
     float a = 1,
     GLuint flags = GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT
-    ) {
+) {
   glClearColor(r, g, b, a);
   glClear(flags);
   checkErrors();
@@ -47,19 +47,18 @@ Renderer::Renderer(
     function<void(SetupScene, LightScene, RenderScene)> r,
     long int t)
 :
-    sources(s), Render(r), loadTime(t) {
+        sources(s), Render(r), loadTime(t) {
 }
-;
 
 Renderer generateSSAORenderer(BindScene bindScene) {
-  int fboWidth = WIDTH * 0.5;
-  int fboHeight = HEIGHT * 0.5;
+  int halfWidth = WIDTH * 0.5;
+  int halfHeight = HEIGHT * 0.5;
 
-  auto gFBO = make_shared<FBO>(fboWidth, fboHeight);
-  auto lightingFBO = make_shared<FBO>(fboWidth, fboHeight);
-  auto ssaoFBO = make_shared<FBO>(fboWidth, fboHeight);
-  auto blurFBO = make_shared<FBO>(fboWidth, fboHeight);
-  auto hatchedFBO = make_shared<FBO>(fboWidth, fboHeight);
+  auto gFBO = make_shared<FBO>(halfWidth, halfHeight);
+  auto lightingFBO = make_shared<FBO>(halfWidth, halfHeight);
+  auto ssaoFBO = make_shared<FBO>(halfWidth, halfHeight);
+  auto blurFBO = make_shared<FBO>(halfWidth, halfHeight);
+  auto hatchedFBO = make_shared<FBO>(halfWidth, halfHeight);
 
   auto noiseTexture = make_shared<Texture>("noise.png");
   checkErrors();
@@ -148,115 +147,120 @@ Renderer generateSSAORenderer(BindScene bindScene) {
       "render_buffer.frag"
   };
   long int t = getModifiedTime(sources);
+
   auto render = [=] (SetupScene setupScene, LightScene lightScene, RenderScene renderScene) {
-    glViewport(0,0, fboWidth, fboHeight);
+
+    auto bindFBO = [&] (auto fbo) {
+      glBindFramebuffer(GL_FRAMEBUFFER, fbo->GetFrameBuffer());
+      glViewport(0,0, fbo->Width(), fbo->Height());
+    };
 
     { // gbuffer render pass
-        glUseProgram(gShader);
-        glBindFramebuffer(GL_FRAMEBUFFER, gFBO->GetFrameBuffer());
+      glUseProgram(gShader);
+      bindFBO(gFBO);
 
-        glEnable(GL_DEPTH_TEST);
-        clearActiveBuffer(0,0,0,0, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+      glEnable(GL_DEPTH_TEST);
+      clearActiveBuffer(0,0,0,0, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // render scene
-        setupScene(gUniforms);
-        renderScene(gUniforms);
-        checkErrors();
-      }
+      // render scene
+      setupScene(gUniforms);
+      renderScene(gUniforms);
+      checkErrors();
+    }
 
-      { // lighting render pass
-        glUseProgram(lightShader);
-        glBindFramebuffer(GL_FRAMEBUFFER, lightingFBO->GetFrameBuffer());
+    { // lighting render pass
+      glUseProgram(lightShader);
+      bindFBO(lightingFBO);
 
-        glEnable(GL_DEPTH_TEST);
-        clearActiveBuffer(0,0,0,0, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+      glEnable(GL_DEPTH_TEST);
+      clearActiveBuffer(0,0,0,0, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glUniform1i(lightUniforms.get(POSITIONS), gFBO->GetAttachmentIndex(0));
-        glUniform1i(lightUniforms.get(NORMALS), gFBO->GetAttachmentIndex(1));
+      glUniform1i(lightUniforms.get(POSITIONS), gFBO->GetAttachmentIndex(0));
+      glUniform1i(lightUniforms.get(NORMALS), gFBO->GetAttachmentIndex(1));
 
-        lightScene(lightUniforms);
+      lightScene(lightUniforms);
 
-        // render scene
-        gFBO->Render();
-        checkErrors();
-      }
+      // render scene
+      gFBO->Render();
+      checkErrors();
+    }
 
-      { // ssao render pass
-        glUseProgram(ssaoShader);
-        glBindFramebuffer(GL_FRAMEBUFFER, ssaoFBO->GetFrameBuffer());
+    { // ssao render pass
+      glUseProgram(ssaoShader);
+      bindFBO(ssaoFBO);
 
-        setupScene(ssaoUniforms);
+      setupScene(ssaoUniforms);
 
-        glUniform1i(ssaoUniforms.get(RANDOM), noiseTexture->index);
-        glUniform1i(ssaoUniforms.get(POSITIONS), gFBO->GetAttachmentIndex(0));
-        glUniform1i(ssaoUniforms.get(NORMALS), gFBO->GetAttachmentIndex(1));
-        glUniform1i(ssaoUniforms.get(UVS), gFBO->GetAttachmentIndex(2));
-        glUniform1i(ssaoUniforms.get(DEPTHS), gFBO->GetDepthIndex());
-        checkErrors();
+      glUniform1i(ssaoUniforms.get(RANDOM), noiseTexture->index);
+      glUniform1i(ssaoUniforms.get(POSITIONS), gFBO->GetAttachmentIndex(0));
+      glUniform1i(ssaoUniforms.get(NORMALS), gFBO->GetAttachmentIndex(1));
+      glUniform1i(ssaoUniforms.get(UVS), gFBO->GetAttachmentIndex(2));
+      glUniform1i(ssaoUniforms.get(DEPTHS), gFBO->GetDepthIndex());
+      checkErrors();
 
-        gFBO->Render();
-        checkErrors();
-      }
+      gFBO->Render();
+      checkErrors();
+    }
 
-      { // blur render pass
-        glUseProgram(blurShader);
-        glBindFramebuffer(GL_FRAMEBUFFER, blurFBO->GetFrameBuffer());
+    { // blur render pass
+      glUseProgram(blurShader);
+      bindFBO(blurFBO);
 
-        glUniform1i(blurUniforms.get(BUFFER), ssaoFBO->GetAttachmentIndex(0));
-        glUniform1i(blurUniforms.get(DEPTHS), gFBO->GetDepthIndex());
-        checkErrors();
+      glUniform1i(blurUniforms.get(BUFFER), ssaoFBO->GetAttachmentIndex(0));
+      glUniform1i(blurUniforms.get(DEPTHS), gFBO->GetDepthIndex());
+      checkErrors();
 
-        ssaoFBO->Render();
-        checkErrors();
-      }
+      ssaoFBO->Render();
+      checkErrors();
+    }
 
-      { // hatching render pass
-        glUseProgram(hatchShader);
-        glBindFramebuffer(GL_FRAMEBUFFER, hatchedFBO->GetFrameBuffer());
+    { // hatching render pass
+      glUseProgram(hatchShader);
+      bindFBO(hatchedFBO);
 
-        glm::vec3 lightDir = glm::vec3(-1,-1,-1);
-        glUniform3fv(hatchUniforms.get(LIGHT_DIR), 1, glm::value_ptr(lightDir));
+      glm::vec3 lightDir = glm::vec3(-1,-1,-1);
+      glUniform3fv(hatchUniforms.get(LIGHT_DIR), 1, glm::value_ptr(lightDir));
 
-        glUniform1i(hatchUniforms.get(HATCH0_TEXTURE), hatch0Texture->index);
-        glUniform1i(hatchUniforms.get(HATCH1_TEXTURE), hatch1Texture->index);
-        glUniform1i(hatchUniforms.get(HATCH2_TEXTURE), hatch2Texture->index);
-        glUniform1i(hatchUniforms.get(HATCH3_TEXTURE), hatch3Texture->index);
-        glUniform1i(hatchUniforms.get(HATCH4_TEXTURE), hatch4Texture->index);
-        glUniform1i(hatchUniforms.get(HATCH5_TEXTURE), hatch5Texture->index);
+      glUniform1i(hatchUniforms.get(HATCH0_TEXTURE), hatch0Texture->index);
+      glUniform1i(hatchUniforms.get(HATCH1_TEXTURE), hatch1Texture->index);
+      glUniform1i(hatchUniforms.get(HATCH2_TEXTURE), hatch2Texture->index);
+      glUniform1i(hatchUniforms.get(HATCH3_TEXTURE), hatch3Texture->index);
+      glUniform1i(hatchUniforms.get(HATCH4_TEXTURE), hatch4Texture->index);
+      glUniform1i(hatchUniforms.get(HATCH5_TEXTURE), hatch5Texture->index);
 
-        glUniform1i(hatchUniforms.get(POSITIONS), gFBO->GetAttachmentIndex(0));
-        glUniform1i(hatchUniforms.get(NORMALS), gFBO->GetAttachmentIndex(1));
-        glUniform1i(hatchUniforms.get(UVS), gFBO->GetAttachmentIndex(2));
-        glUniform1i(hatchUniforms.get(BUFFER), blurFBO->GetAttachmentIndex(0));
-        checkErrors();
+      glUniform1i(hatchUniforms.get(POSITIONS), gFBO->GetAttachmentIndex(0));
+      glUniform1i(hatchUniforms.get(NORMALS), gFBO->GetAttachmentIndex(1));
+      glUniform1i(hatchUniforms.get(UVS), gFBO->GetAttachmentIndex(2));
+      glUniform1i(hatchUniforms.get(BUFFER), blurFBO->GetAttachmentIndex(0));
+      checkErrors();
 
-        setupScene(hatchUniforms);
+      setupScene(hatchUniforms);
 
-        gFBO->Render();
-        checkErrors();
-      }
+      gFBO->Render();
+      checkErrors();
+    }
 
+    { // render buffers
       glViewport(0,0, WIDTH, HEIGHT);
-      { // render buffers
-        glUseProgram(bufferShader);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+      glUseProgram(bufferShader);
+      glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-        auto drawBuffer = [&] (auto fbo, float scale, float offX, float offY, int index) {
-          glUniform1f(bufferUniforms.get(SCALE), scale);
-          glUniform1f(bufferUniforms.get(OFFSET_X), offX);
-          glUniform1f(bufferUniforms.get(OFFSET_Y), offY);
-          glUniform1i(bufferUniforms.get(BUFFER), fbo->GetAttachmentIndex(index));
-          fbo->Render();
-        };
+      auto drawBuffer = [&] (auto fbo, float scale, float offX, float offY, int index) {
+        glUniform1f(bufferUniforms.get(SCALE), scale);
+        glUniform1f(bufferUniforms.get(OFFSET_X), offX);
+        glUniform1f(bufferUniforms.get(OFFSET_Y), offY);
+        glUniform1i(bufferUniforms.get(BUFFER), fbo->GetAttachmentIndex(index));
+        fbo->Render();
+      };
 
-        drawBuffer(lightingFBO, 0.5, -0.5,-0.5,0);
-        drawBuffer(ssaoFBO, 0.5, -0.5,0.5,0);
-        drawBuffer(blurFBO, 0.5, 0.5,-0.5,0);
-        drawBuffer(hatchedFBO, 0.5, 0.5,0.5,0);
+      drawBuffer(lightingFBO, 0.5, -0.5,-0.5,0);
+      drawBuffer(ssaoFBO, 0.5, -0.5,0.5,0);
+      drawBuffer(blurFBO, 0.5, 0.5,-0.5,0);
+      drawBuffer(hatchedFBO, 0.5, 0.5,0.5,0);
 
-        checkErrors();
-      }
-    };
+      checkErrors();
+    }
+  };
 
   return Renderer(sources, render, t);
 }
@@ -270,7 +274,7 @@ Renderer generateSimpleRenderer(BindScene bindScene) {
       MODEL_TRANS, VIEW_TRANS, PROJ_TRANS, COLOR
   });
 
-  auto render = [=] (SetupScene setupScene, LightScene lightScene, RenderScene renderScene) {
+  auto renderScene = [=] (SetupScene setupScene, LightScene lightScene, RenderScene renderScene) {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(shader);
 
@@ -286,5 +290,5 @@ Renderer generateSimpleRenderer(BindScene bindScene) {
   vector<string> sources = { "simple.vert", "simple.frag" };
   long int t = getModifiedTime(sources);
 
-  return Renderer(sources, render, t);
+  return Renderer(sources, renderScene, t);
 }

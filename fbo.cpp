@@ -42,6 +42,9 @@ static void printStatus() {
 }
 
 FBO::FBO(int width, int height) {
+  this->width = width;
+  this->height = height;
+
   glGenVertexArrays(1, &this->vao);
   glBindVertexArray(this->vao);
   checkErrors();
@@ -115,6 +118,14 @@ int FBO::GetAttachmentIndex (int i) const {
 
 int FBO::GetDepthIndex () const {
   return this->depth.index;
+}
+
+int FBO::Width() const {
+  return this->width;
+}
+
+int FBO::Height() const {
+  return this->height;
 }
 
 void FBO::Render() const {

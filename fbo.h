@@ -27,10 +27,15 @@ class FBO {
   int GetDepthIndex() const;
   void Render() const;
 
+  int Width() const;
+  int Height() const;
+
  private:
   GLuint fbo, vbo, vao;
   Texture attachments[NUM_ATTACHMENTS];
   Texture depth;
+
+  int width, height;
 
  private: // disable copying
   FBO(const FBO& that) = delete;

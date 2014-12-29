@@ -18,9 +18,9 @@ uniform vec3 unifLightDir;
 
 uniform sampler2D unifRandom; // stores a texture of random values
 
+const float HEMI_MAX_DELTA = 2; // multiplied by radius
 const float HEMI_RADIUS = 0.05;
 const int HEMI_SAMPLES = 24;
-
 const vec3 HEMI [] = vec3 []
   (vec3(0.015389, -0.009998, 0.025293),
    vec3(0.015600, -0.006110, 0.060213),
@@ -47,12 +47,11 @@ const vec3 HEMI [] = vec3 []
    vec3(0.655396, 0.232571, 0.181573),
    vec3(0.210937, 0.536386, 0.479892));
 
-const float DISK_MAX_DIST = 5;
+const float DISK_MAX_DELTA = 1;
 const vec2 DISK_RADIUS = vec2(0.008, 0.006);
 const int DISK_SAMPLES = 16;
 const vec2 DISK[] = vec2[] // These are the Poisson Disk Samples
-  (
-   vec2( -0.94201624,  -0.39906216 ),
+  (vec2( -0.94201624,  -0.39906216 ),
    vec2(  0.94558609,  -0.76890725 ),
    vec2( -0.094184101, -0.92938870 ),
    vec2(  0.34495938,   0.29387760 ),
@@ -132,7 +131,7 @@ void main() {
       float VPdistSP = distance(vPos, vSamplePos);
 
       // a = distance function
-      float a = 1.0 - smoothstep(DISK_MAX_DIST, DISK_MAX_DIST * 2, VPdistSP);
+      float a = 1.0 - smoothstep(DISK_MAX_DELTA, DISK_MAX_DELTA * 2, VPdistSP);
       // b = dot-Product
       float b = NdotS;
 
@@ -170,16 +169,20 @@ void main() {
       vec3 vPos1 = posWorldToView(wPos1);
       float vDepth1 = length(vPos1);
 
-      if (abs(vDepth1 - vDepth) < 2 * radius) {
-	if (vDepth1 <= vDepth0) {
-	  hemi_occlusion += 1.0;
-	}
+      float vDelta = abs(vDepth1 - vDepth);
+      float attenuation = 1.0 - smoothstep
+	(radius * HEMI_MAX_DELTA,
+	 radius * HEMI_MAX_DELTA * 2,
+	 vDelta);
+      
+      if (vDepth1 <= vDepth0) {
+	hemi_occlusion += attenuation * 1.0;
       }
     }
   }
 
   float light = 1
-    - 0.5 * disk_occlusion / DISK_SAMPLES
+    - 1 * disk_occlusion / DISK_SAMPLES
     - 0.5 * hemi_occlusion / HEMI_SAMPLES;
   outFragColor = vec4(light, light, light, 1.0);
 }
