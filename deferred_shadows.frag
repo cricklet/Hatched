@@ -4,19 +4,22 @@ in vec2 outVertBufferCoord;
 
 out vec4 outFragColor;
 
-uniform vec3 unifLightPositions[100];
-uniform vec3 unifLightConstants[100]; // constant, linear, squared
-uniform vec3 unifLightColors[100];
+const int MAX_LIGHTS = 100;
+uniform vec3 unifLightPositions[MAX_LIGHTS];
+uniform vec3 unifLightConstants[MAX_LIGHTS]; // constant, linear, squared
+uniform vec3 unifLightColors[MAX_LIGHTS];
 uniform int unifNumLights;
 
-uniform samplerCube unifShadowMap; // for the first light
+const int MAX_SHADOW_MAPS = 8;
+uniform samplerCube unifShadowMaps[MAX_SHADOW_MAPS];
+uniform int unifNumShadowMaps;
 
 uniform sampler2D unifPositions;
 uniform sampler2D unifNormals;
 
-float shadowContribution(vec3 dir, float depth) {
-  float M1 = texture(unifShadowMap, dir).r;
-  float M2 = texture(unifShadowMap, dir).g;
+float shadowContribution(vec3 dir, float depth, int index) {
+  float M1 = texture(unifShadowMaps[index], dir).r;
+  float M2 = texture(unifShadowMaps[index], dir).g;
 
   if (depth <= M1) return 0;
 
@@ -49,7 +52,11 @@ void main() {
     float attenuation = 1.0 / (constant + linear * wDist + squared * wDist * wDist);
     float reflected = dot(-normalize(wDir), wNormal);
 
-    float shadow = shadowContribution(wDir, wDist);
+    float shadow = 0;
+    if (i < unifNumShadowMaps) {
+      shadow = shadowContribution(wDir, wDist, i);
+    }
+
     float light = (1 - shadow) * attenuation * reflected;
     light = clamp(light, 0,1);
     outFragColor += vec4(light * lightColor, 1.0);

@@ -5,7 +5,7 @@ out vec4 outFragColor;
 
 uniform sampler2D unifBuffer;
 
-float BLUR_RADIUS = 0.0005;
+uniform float unifBlurRadius = 0.0005;
 
 uniform sampler2D unifDepths;
 uniform bool unifBlurDepthCheck;
@@ -22,7 +22,7 @@ void main () {
   int samples = 0;
   for (int x = -4; x <= 4; x ++) {
     for (int y = -4; y <= 4; y ++) {
-      vec2 sample = origin + vec2(x, y) * BLUR_RADIUS;
+      vec2 sample = origin + vec2(x, y) * unifBlurRadius;
       sample = clamp(sample, 0,1);
 
       if (unifBlurDepthCheck) {

@@ -69,7 +69,7 @@ Renderer::Renderer(
     vector<string> s,
     function<void(SetupScene, GetLights, RenderScene)> r,
     long int t):
-                                sources(s), Render(r), loadTime(t) {
+                            sources(s), Render(r), loadTime(t) {
 }
 
 Renderer generateSSAORenderer(BindScene bindScene) {
@@ -96,14 +96,12 @@ Renderer generateSSAORenderer(BindScene bindScene) {
   auto sFormats = {GL_RGBA};
   auto sTypes = {GL_FLOAT};
 
-  auto shadowFBO0 = make_shared<FBO>(HEIGHT, HEIGHT,
+  auto shadowInterFBO = make_shared<FBO>(HEIGHT, HEIGHT,
       1, sInternalFormats, sFormats, sTypes);
-  auto shadowFBO1 = make_shared<FBO>(halfHeight, halfHeight,
-      1, sInternalFormats, sFormats, sTypes);
-
+  const int MAX_SHADOW_MAPS = 8;
   vector<shared_ptr<CubeMap>> shadowMaps;
-  for (int i = 0; i < 4; i ++) {
-    auto s = make_shared<CubeMap>(HEIGHT);
+  for (int i = 0; i < MAX_SHADOW_MAPS; i ++) {
+    auto s = make_shared<CubeMap>(halfHeight);
     shadowMaps.push_back(s);
   };
 
@@ -143,7 +141,7 @@ Renderer generateSSAORenderer(BindScene bindScene) {
   Uniforms shadowedUniforms;
   shadowedUniforms.add(shadowedShader, {
       LIGHT_POSITIONS, LIGHT_CONSTANTS, LIGHT_COLORS, NUM_LIGHTS,
-      SHADOW_MAP,
+      SHADOW_MAPS, NUM_SHADOW_MAPS,
       POSITIONS, NORMALS,
   });
   checkErrors();
@@ -218,12 +216,12 @@ Renderer generateSSAORenderer(BindScene bindScene) {
   auto render = [=] (SetupScene setupScene, GetLights getLights, RenderScene renderScene) {
 
     auto lights = getLights();
+    int numShadowMaps = min(lights.num(), (int) shadowMaps.size());
+
     if (*shadowsRendered == false) { // render each shadowmap
       *shadowsRendered = true;
 
       glm::mat4 projTrans = getShadowMapProjection();
-
-      int numShadowMaps = min(lights.num(), (int) shadowMaps.size());
       for (int lightIndex = 0; lightIndex < numShadowMaps; lightIndex ++) {
         auto shadowMap = shadowMaps[lightIndex];
         auto position = lights.getPosition(lightIndex);
@@ -235,8 +233,8 @@ Renderer generateSSAORenderer(BindScene bindScene) {
             glUseProgram(smShader);
             glEnable(GL_DEPTH_TEST);
 
-            glViewport(0,0, shadowFBO0->Width(), shadowFBO0->Height());
-            glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO0->GetFrameBuffer());
+            glViewport(0,0, shadowInterFBO->Width(), shadowInterFBO->Height());
+            glBindFramebuffer(GL_FRAMEBUFFER, shadowInterFBO->GetFrameBuffer());
             clearActiveBuffer();
 
             glUniformMatrix4fv(smUniforms.get(VIEW_TRANS),
@@ -248,33 +246,16 @@ Renderer generateSSAORenderer(BindScene bindScene) {
             checkErrors();
           }
 
-          { // downscale the shadow map
-            glUseProgram(bufferShader);
-
-            glViewport(0,0, shadowFBO1->Width(), shadowFBO1->Height());
-            glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO1->GetFrameBuffer());
-            clearActiveBuffer();
-
-            glUniform1i(bufferUniforms.get(BUFFER), shadowFBO0->GetAttachmentIndex(0));
-            glUniform1f(bufferUniforms.get(SCALE), 1);
-            glUniform1f(bufferUniforms.get(OFFSET_X), 0);
-            glUniform1f(bufferUniforms.get(OFFSET_Y), 0);
-            checkErrors();
-
-            fboRenderer->Render();
-            checkErrors();
-          }
           { // blur the shadow map
-            glUseProgram(bufferShader);
+            glUseProgram(blurShader);
 
             glViewport(0,0, shadowMap->Size(), shadowMap->Size());
             glBindFramebuffer(GL_FRAMEBUFFER, shadowMap->Framebuffer(faceIndex));
             clearActiveBuffer();
 
-            glUniform1i(bufferUniforms.get(BUFFER), shadowFBO1->GetAttachmentIndex(0));
-            glUniform1f(bufferUniforms.get(SCALE), 1);
-            glUniform1f(bufferUniforms.get(OFFSET_X), 0);
-            glUniform1f(bufferUniforms.get(OFFSET_Y), 0);
+            glUniform1i(blurUniforms.get(BUFFER), shadowInterFBO->GetAttachmentIndex(0));
+            glUniform1i(blurUniforms.get(BLUR_DEPTH_CHECK), 0);
+            glUniform1f(blurUniforms.get(BLUR_RADIUS), 0.001);
             checkErrors();
 
             fboRenderer->Render();
@@ -322,7 +303,12 @@ Renderer generateSSAORenderer(BindScene bindScene) {
       glUniform3fv(shadowedUniforms.get(LIGHT_CONSTANTS), numLights, conValues);
       glUniform3fv(shadowedUniforms.get(LIGHT_COLORS),    numLights, colValues);
 
-      glUniform1i(shadowedUniforms.get(SHADOW_MAP), shadowMaps[0]->GetTextureIndex());
+      int shadowMapIndices[MAX_SHADOW_MAPS];
+      for (int i = 0; i < MAX_SHADOW_MAPS; i ++) {
+        shadowMapIndices[i] = shadowMaps[i]->GetTextureIndex();
+      }
+      glUniform1iv(shadowedUniforms.get(SHADOW_MAPS), MAX_SHADOW_MAPS, shadowMapIndices);
+      glUniform1i(shadowedUniforms.get(NUM_SHADOW_MAPS), numShadowMaps);
 
       // render scene
       fboRenderer->Render();
@@ -377,7 +363,8 @@ Renderer generateSSAORenderer(BindScene bindScene) {
 
       glUniform1i(blurUniforms.get(BUFFER), ssaoFBO->GetAttachmentIndex(0));
       glUniform1i(blurUniforms.get(DEPTHS), gFBO->GetDepthIndex());
-      glUniform1i(blurUniforms.get(BLUR_DEPTH_CHECK), 0);
+      glUniform1i(blurUniforms.get(BLUR_DEPTH_CHECK), 1);
+      glUniform1f(blurUniforms.get(BLUR_RADIUS), 0.0005);
       checkErrors();
 
       fboRenderer->Render();

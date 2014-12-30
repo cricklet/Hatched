@@ -43,7 +43,11 @@ static long int getTimeOfDay() {
 
 static auto loadLights() {
   Lights l;
-  l.add(glm::vec3(0,0,1.5), glm::vec3(1,1,0), glm::vec3(0.8,0.8,1.5));
+  l.add(glm::vec3(0,0,1.5), glm::vec3(1,1,0), glm::vec3(2, 2, 2));
+  l.add(glm::vec3(3,3,1), glm::vec3(1,1,0), glm::vec3(1,1,0));
+  l.add(glm::vec3(3,-3,1), glm::vec3(1,1,0), glm::vec3(0,1,1));
+  l.add(glm::vec3(-3,3,1), glm::vec3(1,1,0), glm::vec3(1,0,1));
+  l.add(glm::vec3(-3,-3,1), glm::vec3(1,1,0), glm::vec3(1,0.5,0.5));
   return l;
 }
 

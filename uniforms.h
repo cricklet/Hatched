@@ -43,7 +43,8 @@ const string NUM_LIGHTS = "unifNumLights";
 const string BLUR_RADIUS = "unifBlurRadius";
 const string BLUR_DEPTH_CHECK = "unifBlurDepthCheck";
 
-const string SHADOW_MAP = "unifShadowMap";
+const string SHADOW_MAPS = "unifShadowMaps";
+const string NUM_SHADOW_MAPS = "unifNumShadowMaps";
 
 const string DEPTHS = "unifDepths";
 const string POSITIONS = "unifPositions";
