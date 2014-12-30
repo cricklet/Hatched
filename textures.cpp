@@ -1,6 +1,7 @@
 #include "textures.h"
 #include "helper.h"
 
+#include <stdexcept>
 #include <SOIL/soil.h>
 
 static bool indicesInUse[100]; // initialized to all zero b/c static
@@ -63,7 +64,37 @@ static GLuint loadTexture(int index) {
   return texture;
 }
 
-Texture::Texture(string filename) {
+static GLuint loadCubemap(int index) {
+  GLuint texture;
+
+  glActiveTexture(GL_TEXTURE0 + index);
+  glGenTextures(1, &texture);
+  glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BASE_LEVEL, 0);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_LEVEL, 0);
+
+  return texture;
+}
+
+static void checkInitialized(bool &initialized) {
+  if (initialized) {
+    throw runtime_error(string("Texture already initialized"));
+  } else {
+    initialized = true;
+  }
+}
+
+Texture::Texture() {
+}
+
+void Texture::InitializeAs2D(string filename) {
+  checkInitialized(this->initialized);
+
   this->index = newTextureIndex();
 
   if (filename.length() > 0) {
@@ -71,11 +102,24 @@ Texture::Texture(string filename) {
   } else {
     this->texture = loadTexture(this->index);
   }
-  // cout << "Texture() #" << this->index << "\n";
+}
+
+void Texture::InitializeAsCubemap() {
+  checkInitialized(this->initialized);
+
+  this->index = newTextureIndex();
+  this->texture = loadCubemap(this->index);
 }
 
 Texture::~Texture() {
-  // cout << "~Texture() #" << this->index << "\n";
-  glDeleteTextures(1, &this->texture);
-  freeTextureIndex(this->index);
+  if (initialized) {
+    glDeleteTextures(1, &this->texture);
+    freeTextureIndex(this->index);
+  }
+}
+
+shared_ptr<Texture> makeTextureAs2D(string filename) {
+  auto t = make_shared<Texture>();
+  t->InitializeAs2D(filename);
+  return t;
 }

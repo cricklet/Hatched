@@ -28,17 +28,15 @@ class FBO {
       GLint depthType = GL_FLOAT);
   ~FBO();
 
-  void BindToShader(GLuint shaderProgram);
   GLuint GetFrameBuffer() const;
   int GetAttachmentIndex(int i) const;
   int GetDepthIndex() const;
-  void Render() const;
 
   int Width() const;
   int Height() const;
 
  private:
-  GLuint fbo, vbo, vao;
+  GLuint fbo;
   Texture attachments[MAX_ATTACHMENTS];
   Texture depth;
 

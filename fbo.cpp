@@ -1,21 +1,6 @@
 #include "fbo.h"
 #include "textures.h"
 
-static GLfloat vertices[] = {
-    -1, -1, 0, 0,
-    -1, 1, 0, 1,
-    1, 1, 1, 1,
-
-    1, 1, 1, 1,
-    1, -1, 1, 0,
-    -1, -1, 0, 0,
-};
-
-static GLuint vertexStride = sizeof(GLfloat) * 4;
-static void *positionOffset = 0;
-static void *coordOffset = (void *) (2 * sizeof(GLfloat));
-static int numElements = 6;
-
 static void printStatus() {
   int res, i = 0;
   GLint buffer;
@@ -53,17 +38,8 @@ FBO::FBO(int width, int height,
   this->width = width;
   this->height = height;
 
-  glGenVertexArrays(1, &this->vao);
-  glBindVertexArray(this->vao);
-  checkErrors();
-
   glGenFramebuffers(1, &this->fbo);
   glBindFramebuffer(GL_FRAMEBUFFER, this->fbo);
-  checkErrors();
-
-  glGenBuffers(1, &this->vbo);
-  glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
   checkErrors();
 
   // Bind textures to frame buffer
@@ -73,6 +49,7 @@ FBO::FBO(int width, int height,
     GLint format = attachmentFormats[i];
     GLint type = attachmentTypes[i];
 
+    this->attachments[i].InitializeAs2D();
     GLuint texture = this->attachments[i].texture;
 
     glBindTexture(GL_TEXTURE_2D, texture);
@@ -85,6 +62,7 @@ FBO::FBO(int width, int height,
   glDrawBuffers(numAttachments, drawBuffers);
 
   if (includeDepth) {
+    this->depth.InitializeAs2D();
     glBindTexture(GL_TEXTURE_2D, this->depth.texture);
     glTexImage2D(GL_TEXTURE_2D, 0, depthInternalFormat, width, height, 0, GL_DEPTH_COMPONENT, depthInternalType, NULL /*no data*/);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, this->depth.texture, 0);
@@ -103,24 +81,7 @@ FBO::FBO(int width, int height,
 }
 
 FBO::~FBO() {
-  glDeleteVertexArrays(1, &this->vao);
   glDeleteFramebuffers(1, &this->fbo);
-  glDeleteBuffers(1, &this->vbo);
-}
-
-void FBO::BindToShader(GLuint shaderProgram) {
-  glBindVertexArray(this->vao);
-  glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
-
-  GLint posAttrib = glGetAttribLocation(shaderProgram, "inVertPosition");
-  glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, vertexStride, positionOffset);
-  glEnableVertexAttribArray(posAttrib);
-  checkErrors();
-
-  GLint coordAttrib = glGetAttribLocation(shaderProgram, "inVertBufferCoord");
-  glVertexAttribPointer(coordAttrib, 2, GL_FLOAT, GL_FALSE, vertexStride, coordOffset);
-  glEnableVertexAttribArray(coordAttrib);
-  checkErrors();
 }
 
 GLuint FBO::GetFrameBuffer() const {
@@ -141,15 +102,4 @@ int FBO::Width() const {
 
 int FBO::Height() const {
   return this->height;
-}
-
-void FBO::Render() const {
-  glBindVertexArray(this->vao);
-
-  // Disable tests
-  glDisable(GL_DEPTH_TEST);
-
-  // Render the fbo quad
-  glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
-  glDrawArrays(GL_TRIANGLES, 0, numElements);
 }

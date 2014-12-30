@@ -10,6 +10,9 @@
 // if i want to extend this, first turn it into a virtual abstract class!
 class Lights {
 public:
+  glm::vec3 getPosition(int i) {
+    return positions[i];
+  };
   GLfloat *getPositions() {
     return reinterpret_cast<GLfloat *>(positions.data());
   };
