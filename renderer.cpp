@@ -69,7 +69,7 @@ Renderer::Renderer(
     vector<string> s,
     function<void(SetupScene, GetLights, RenderScene)> r,
     long int t):
-                            sources(s), Render(r), loadTime(t) {
+                                sources(s), Render(r), loadTime(t) {
 }
 
 Renderer generateSSAORenderer(BindScene bindScene) {
@@ -96,11 +96,14 @@ Renderer generateSSAORenderer(BindScene bindScene) {
   auto sFormats = {GL_RGBA};
   auto sTypes = {GL_FLOAT};
 
-  auto shadowInterFBO = make_shared<FBO>(HEIGHT, HEIGHT,
+  auto shadowFBO0 = make_shared<FBO>(HEIGHT, HEIGHT,
       1, sInternalFormats, sFormats, sTypes);
+  auto shadowFBO1 = make_shared<FBO>(halfHeight, halfHeight,
+      1, sInternalFormats, sFormats, sTypes);
+
   vector<shared_ptr<CubeMap>> shadowMaps;
   for (int i = 0; i < 4; i ++) {
-    auto s = make_shared<CubeMap>(halfHeight);
+    auto s = make_shared<CubeMap>(HEIGHT);
     shadowMaps.push_back(s);
   };
 
@@ -232,8 +235,8 @@ Renderer generateSSAORenderer(BindScene bindScene) {
             glUseProgram(smShader);
             glEnable(GL_DEPTH_TEST);
 
-            glViewport(0,0, shadowInterFBO->Width(), shadowInterFBO->Height());
-            glBindFramebuffer(GL_FRAMEBUFFER, shadowInterFBO->GetFrameBuffer());
+            glViewport(0,0, shadowFBO0->Width(), shadowFBO0->Height());
+            glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO0->GetFrameBuffer());
             clearActiveBuffer();
 
             glUniformMatrix4fv(smUniforms.get(VIEW_TRANS),
@@ -245,16 +248,33 @@ Renderer generateSSAORenderer(BindScene bindScene) {
             checkErrors();
           }
 
+          { // downscale the shadow map
+            glUseProgram(bufferShader);
+
+            glViewport(0,0, shadowFBO1->Width(), shadowFBO1->Height());
+            glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO1->GetFrameBuffer());
+            clearActiveBuffer();
+
+            glUniform1i(bufferUniforms.get(BUFFER), shadowFBO0->GetAttachmentIndex(0));
+            glUniform1f(bufferUniforms.get(SCALE), 1);
+            glUniform1f(bufferUniforms.get(OFFSET_X), 0);
+            glUniform1f(bufferUniforms.get(OFFSET_Y), 0);
+            checkErrors();
+
+            fboRenderer->Render();
+            checkErrors();
+          }
           { // blur the shadow map
-            glUseProgram(blurShader);
+            glUseProgram(bufferShader);
 
             glViewport(0,0, shadowMap->Size(), shadowMap->Size());
             glBindFramebuffer(GL_FRAMEBUFFER, shadowMap->Framebuffer(faceIndex));
             clearActiveBuffer();
 
-            glUniform1i(blurUniforms.get(BUFFER), shadowInterFBO->GetAttachmentIndex(0));
-            glUniform1i(blurUniforms.get(BLUR_DEPTH_CHECK), 0);
-            glUniform1f(blurUniforms.get(BLUR_RADIUS), 0.05);
+            glUniform1i(bufferUniforms.get(BUFFER), shadowFBO1->GetAttachmentIndex(0));
+            glUniform1f(bufferUniforms.get(SCALE), 1);
+            glUniform1f(bufferUniforms.get(OFFSET_X), 0);
+            glUniform1f(bufferUniforms.get(OFFSET_Y), 0);
             checkErrors();
 
             fboRenderer->Render();
