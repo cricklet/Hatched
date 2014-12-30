@@ -34,7 +34,18 @@ void main() {
     float sqDist = dist * dist;
     float attenuation = 1.0 / (constant + linear * dist + squared * sqDist);
     float reflected = dot(-normalize(dir), normal);
-    vec3 light = attenuation * reflected * lightColor;
-    outFragColor += vec4(light, 1.0);
+
+    float shadow = 0;
+    if (i == 0) {
+      float shadowDist = texture(unifShadowMap, -dir).r;
+      if (shadowDist < dist) {
+	shadow = 1;
+      }
+
+      outFragColor = texture(unifShadowMap, -dir);
+    }
+
+    vec3 light = (1 - shadow) * attenuation * reflected * lightColor;
+    //outFragColor += vec4(light, 1.0);
   }
 }

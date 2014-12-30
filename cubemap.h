@@ -42,8 +42,8 @@ static void printStatus() {
 class CubeMap {
 public:
   CubeMap (int size,
-      GLint internalFormat = GL_R32F,
-      GLint format = GL_RED,
+      GLint internalFormat = GL_RGBA32F,
+      GLint format = GL_RGBA,
       GLint type = GL_FLOAT
   ) {
     this->size = size;

@@ -40,6 +40,8 @@ const string LIGHT_CONSTANTS= "unifLightConstants";
 const string LIGHT_COLORS = "unifLightColors";
 const string NUM_LIGHTS = "unifNumLights";
 
+const string SHADOW_MAP = "unifShadowMap";
+
 const string DEPTHS = "unifDepths";
 const string POSITIONS = "unifPositions";
 const string NORMALS = "unifNormals";
