@@ -40,6 +40,9 @@ const string LIGHT_CONSTANTS= "unifLightConstants";
 const string LIGHT_COLORS = "unifLightColors";
 const string NUM_LIGHTS = "unifNumLights";
 
+const string BLUR_RADIUS = "unifBlurRadius";
+const string BLUR_DEPTH_CHECK = "unifBlurDepthCheck";
+
 const string SHADOW_MAP = "unifShadowMap";
 
 const string DEPTHS = "unifDepths";

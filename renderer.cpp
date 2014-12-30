@@ -75,13 +75,15 @@ Renderer::Renderer(
 Renderer generateSSAORenderer(BindScene bindScene) {
   int halfWidth = WIDTH * 0.5;
   int halfHeight = HEIGHT * 0.5;
+  int quarterWidth = WIDTH * 0.5;
+  int quarterHeight = HEIGHT * 0.5;
 
   auto gInternalFormats = {GL_RGBA32F, GL_RGBA32F, GL_RGBA};
   auto gFormats = {GL_RGBA, GL_RGBA, GL_RGBA};
   auto gTypes = {GL_FLOAT, GL_FLOAT, GL_UNSIGNED_BYTE};
 
-  auto gFBO = make_shared<FBO>(halfWidth, halfHeight, 3,
-      gInternalFormats, gFormats, gTypes,
+  auto gFBO = make_shared<FBO>(halfWidth, halfHeight,
+      3, gInternalFormats, gFormats, gTypes,
       true, GL_DEPTH_COMPONENT24, GL_FLOAT);
 
   auto shadowedFBO = make_shared<FBO>(halfWidth, halfHeight);
@@ -90,10 +92,12 @@ Renderer generateSSAORenderer(BindScene bindScene) {
   auto blurFBO = make_shared<FBO>(halfWidth, halfHeight);
   auto hatchedFBO = make_shared<FBO>(halfWidth, halfHeight);
 
-  auto sInternalFormats = {GL_R32F, GL_R32F, GL_R32F, GL_R32F, GL_R32F, GL_R32F};
-  auto sFormats = {GL_RED, GL_RED, GL_RED, GL_RED, GL_RED, GL_RED};
-  auto sTypes = {GL_FLOAT, GL_FLOAT, GL_FLOAT, GL_FLOAT, GL_FLOAT, GL_FLOAT};
+  auto sInternalFormats = {GL_RGBA32F};
+  auto sFormats = {GL_RGBA};
+  auto sTypes = {GL_FLOAT};
 
+  auto shadowInterFBO = make_shared<FBO>(HEIGHT, HEIGHT,
+      1, sInternalFormats, sFormats, sTypes);
   vector<shared_ptr<CubeMap>> shadowMaps;
   for (int i = 0; i < 4; i ++) {
     auto s = make_shared<CubeMap>(halfHeight);
@@ -166,7 +170,7 @@ Renderer generateSSAORenderer(BindScene bindScene) {
   GLuint blurShader = generateShaderProgram("render_buffer.vert", "blur.frag");
   Uniforms blurUniforms;
   blurUniforms.add(blurShader, {
-      BUFFER, DEPTHS
+      BUFFER, DEPTHS, BLUR_RADIUS, BLUR_DEPTH_CHECK
   });
   fboRenderer->BindToShader(blurShader);
   checkErrors();
@@ -206,10 +210,14 @@ Renderer generateSSAORenderer(BindScene bindScene) {
   };
   long int t = getModifiedTime(sources);
 
+  auto shadowsRendered = make_shared<bool>(false);
+
   auto render = [=] (SetupScene setupScene, GetLights getLights, RenderScene renderScene) {
 
     auto lights = getLights();
-    { // render each shadowmap
+    if (*shadowsRendered == false) { // render each shadowmap
+      *shadowsRendered = true;
+
       glm::mat4 projTrans = getShadowMapProjection();
 
       int numShadowMaps = min(lights.num(), (int) shadowMaps.size());
@@ -217,23 +225,41 @@ Renderer generateSSAORenderer(BindScene bindScene) {
         auto shadowMap = shadowMaps[lightIndex];
         auto position = lights.getPosition(lightIndex);
 
-        glUseProgram(smShader);
-        glEnable(GL_DEPTH_TEST);
-
         for (int faceIndex = 0; faceIndex < 6; faceIndex ++) {
-          glViewport(0,0, shadowMap->Size(), shadowMap->Size());
           glm::mat4 viewTrans = getShadowMapTransform(faceIndex, position);
 
-          glBindFramebuffer(GL_FRAMEBUFFER, shadowMap->Framebuffer(faceIndex));
-          clearActiveBuffer();
+          { // render the shadow map
+            glUseProgram(smShader);
+            glEnable(GL_DEPTH_TEST);
 
-          glUniformMatrix4fv(smUniforms.get(VIEW_TRANS),
-              1, GL_FALSE, glm::value_ptr(viewTrans));
-          glUniformMatrix4fv(smUniforms.get(PROJ_TRANS),
-              1, GL_FALSE, glm::value_ptr(projTrans));
+            glViewport(0,0, shadowInterFBO->Width(), shadowInterFBO->Height());
+            glBindFramebuffer(GL_FRAMEBUFFER, shadowInterFBO->GetFrameBuffer());
+            clearActiveBuffer();
 
-          renderScene(smUniforms);
-          checkErrors();
+            glUniformMatrix4fv(smUniforms.get(VIEW_TRANS),
+                1, GL_FALSE, glm::value_ptr(viewTrans));
+            glUniformMatrix4fv(smUniforms.get(PROJ_TRANS),
+                1, GL_FALSE, glm::value_ptr(projTrans));
+
+            renderScene(smUniforms);
+            checkErrors();
+          }
+
+          { // blur the shadow map
+            glUseProgram(blurShader);
+
+            glViewport(0,0, shadowMap->Size(), shadowMap->Size());
+            glBindFramebuffer(GL_FRAMEBUFFER, shadowMap->Framebuffer(faceIndex));
+            clearActiveBuffer();
+
+            glUniform1i(blurUniforms.get(BUFFER), shadowInterFBO->GetAttachmentIndex(0));
+            glUniform1i(blurUniforms.get(BLUR_DEPTH_CHECK), 0);
+            glUniform1f(blurUniforms.get(BLUR_RADIUS), 0.05);
+            checkErrors();
+
+            fboRenderer->Render();
+            checkErrors();
+          }
         }
       }
     }
@@ -331,6 +357,7 @@ Renderer generateSSAORenderer(BindScene bindScene) {
 
       glUniform1i(blurUniforms.get(BUFFER), ssaoFBO->GetAttachmentIndex(0));
       glUniform1i(blurUniforms.get(DEPTHS), gFBO->GetDepthIndex());
+      glUniform1i(blurUniforms.get(BLUR_DEPTH_CHECK), 0);
       checkErrors();
 
       fboRenderer->Render();
@@ -378,8 +405,8 @@ Renderer generateSSAORenderer(BindScene bindScene) {
 
       drawBuffer(lightingFBO->GetAttachmentIndex(0), 0.5, -0.5,-0.5);
       drawBuffer(ssaoFBO->GetAttachmentIndex(0), 0.5, -0.5,0.5);
-      drawBuffer(shadowedFBO->GetAttachmentIndex(0), 0.5, 0.5,-0.5);
       drawBuffer(hatchedFBO->GetAttachmentIndex(0), 0.5, 0.5,0.5);
+      drawBuffer(shadowedFBO->GetAttachmentIndex(0), 0.5, 0.5,-0.5);
 
       checkErrors();
     }

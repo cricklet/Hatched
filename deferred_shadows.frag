@@ -14,6 +14,20 @@ uniform samplerCube unifShadowMap; // for the first light
 uniform sampler2D unifPositions;
 uniform sampler2D unifNormals;
 
+float shadowContribution(vec3 dir, float depth) {
+  float M1 = texture(unifShadowMap, dir).r;
+  float M2 = texture(unifShadowMap, dir).g;
+
+  if (depth <= M1) return 0;
+
+  float avg = M1;
+  float var = M2 - M1 * M1;
+
+  var = max(var, 0.0001);
+
+  return 1 - var / (var + pow(depth - avg, 2));
+}
+
 void main() {
   vec2 sCoord = outVertBufferCoord;
   vec3 wPosition = texture(unifPositions, sCoord).xyz;
@@ -35,15 +49,9 @@ void main() {
     float attenuation = 1.0 / (constant + linear * wDist + squared * wDist * wDist);
     float reflected = dot(-normalize(wDir), wNormal);
 
-    float shadow = 0;
-    if (i == 0) {
-      float shadowDist = texture(unifShadowMap, wDir).r + 0.01;
-      if (shadowDist < wDist) {
-	shadow = 1;
-      }
-    }
-
-    vec3 light = (1 - shadow) * attenuation * reflected * lightColor;
-    outFragColor += vec4(light, 1.0);
+    float shadow = shadowContribution(wDir, wDist);
+    float light = (1 - shadow) * attenuation * reflected;
+    light = clamp(light, 0,1);
+    outFragColor += vec4(light * lightColor, 1.0);
   }
 }

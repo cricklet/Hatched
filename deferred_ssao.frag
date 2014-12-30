@@ -47,8 +47,8 @@ const vec3 HEMI [] = vec3 []
    vec3(0.655396, 0.232571, 0.181573),
    vec3(0.210937, 0.536386, 0.479892));
 
-const float DISK_MAX_DELTA = 1;
-const vec2 DISK_RADIUS = vec2(0.008, 0.006);
+const float DISK_MAX_DELTA = 0.05;
+const vec2 DISK_RADIUS = vec2(0.008, 0.006) * 0.5;
 const int DISK_SAMPLES = 16;
 const vec2 DISK[] = vec2[] // These are the Poisson Disk Samples
   (vec2( -0.94201624,  -0.39906216 ),
@@ -115,27 +115,13 @@ void main() {
       vec2 sSampleCoord = clamp(sCoord + sRay, 0,1);
     
       vec3 wSamplePos = texture(unifPositions, sSampleCoord).xyz;
-      vec3 wSampleNorm = normalize(texture(unifNormals, sSampleCoord).xyz);
-
       vec3 vSamplePos = posWorldToView(wSamplePos);
-      vec3 vSampleNorm = normWorldToView(wSampleNorm);
-      float vSampleDepth = length(vSamplePos);
-    
       vec3 vSampleDir = normalize(vSamplePos - vPos);
+      
+      float vSampleDist = length(vSamplePos - vPos);
 
-      if (abs(vSampleDepth - vDepth) > 0.05) continue;
-
-      // angle between SURFACE-NORMAL and SAMPLE-DIRECTION (vector from SURFACE-POSITION to SAMPLE-POSITION)
-      float NdotS = max(dot(vNorm, vSampleDir), 0);
-      // distance between SURFACE-POSITION and SAMPLE-POSITION
-      float VPdistSP = distance(vPos, vSamplePos);
-
-      // a = distance function
-      float a = 1.0 - smoothstep(DISK_MAX_DELTA, DISK_MAX_DELTA * 2, VPdistSP);
-      // b = dot-Product
-      float b = NdotS;
-
-      disk_occlusion += (a * b);
+      if (vSampleDist > DISK_MAX_DELTA) continue;
+      disk_occlusion += max(dot(vNorm, vSampleDir), 0);
     }
   }
 
@@ -170,13 +156,8 @@ void main() {
       float vDepth1 = length(vPos1);
 
       float vDelta = abs(vDepth1 - vDepth);
-      float attenuation = 1.0 - smoothstep
-	(radius * HEMI_MAX_DELTA,
-	 radius * HEMI_MAX_DELTA * 2,
-	 vDelta);
-      
-      if (vDepth1 <= vDepth0) {
-	hemi_occlusion += attenuation * 1.0;
+      if (vDelta < HEMI_MAX_DELTA * radius && vDepth1 <= vDepth0) {
+	hemi_occlusion += 1.0;
       }
     }
   }
