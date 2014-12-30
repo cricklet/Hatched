@@ -14,11 +14,18 @@ using namespace std;
 #ifndef FBO_H_
 #define FBO_H_
 
-const int NUM_ATTACHMENTS = 3;
+const int MAX_ATTACHMENTS = 6;
 
 class FBO {
  public:
-  FBO(int width, int height);
+  FBO(int width, int height,
+      int numAttachments = 1,
+      vector<GLint> attachmentInternalFormats = {GL_RGBA},
+      vector<GLint> attachmentFormats = {GL_RGBA},
+      vector<GLint> attachmentTypes = {GL_UNSIGNED_BYTE},
+      bool includeDepth = true,
+      GLint depthInternalFormat = GL_DEPTH_COMPONENT24,
+      GLint depthType = GL_FLOAT);
   ~FBO();
 
   void BindToShader(GLuint shaderProgram);
@@ -32,7 +39,7 @@ class FBO {
 
  private:
   GLuint fbo, vbo, vao;
-  Texture attachments[NUM_ATTACHMENTS];
+  Texture attachments[MAX_ATTACHMENTS];
   Texture depth;
 
   int width, height;

@@ -41,7 +41,15 @@ static void printStatus() {
   } while (buffer != GL_NONE);
 }
 
-FBO::FBO(int width, int height) {
+FBO::FBO(int width, int height,
+    int numAttachments,
+    vector<GLint> attachmentInternalFormats,
+    vector<GLint> attachmentFormats,
+    vector<GLint> attachmentTypes,
+    bool includeDepth,
+    GLint depthInternalFormat,
+    GLint depthInternalType
+) {
   this->width = width;
   this->height = height;
 
@@ -59,25 +67,32 @@ FBO::FBO(int width, int height) {
   checkErrors();
 
   // Bind textures to frame buffer
-  GLuint drawBuffers[NUM_ATTACHMENTS];
-  for (int i = 0; i < NUM_ATTACHMENTS; i ++) {
+  GLuint drawBuffers[numAttachments];
+  for (int i = 0; i < numAttachments; i ++) {
+    GLint internalFormat = attachmentInternalFormats[i];
+    GLint format = attachmentFormats[i];
+    GLint type = attachmentTypes[i];
+
     GLuint texture = this->attachments[i].texture;
+
     glBindTexture(GL_TEXTURE_2D, texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL /*no data*/);
+    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format, type, NULL);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, texture, 0);
     checkErrors();
 
     drawBuffers[i] = GL_COLOR_ATTACHMENT0 + i;
   }
-  glDrawBuffers(3, drawBuffers);
+  glDrawBuffers(numAttachments, drawBuffers);
 
-  glBindTexture(GL_TEXTURE_2D, this->depth.texture);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL /*no data*/);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, this->depth.texture, 0);
-  checkErrors();
+  if (includeDepth) {
+    glBindTexture(GL_TEXTURE_2D, this->depth.texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, depthInternalFormat, width, height, 0, GL_DEPTH_COMPONENT, depthInternalType, NULL /*no data*/);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, this->depth.texture, 0);
+    checkErrors();
+  }
 
   if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-    std::cerr << "glCheckF ramebufferStatus() failed\n";
+    std::cerr << "glCheckFramebufferStatus() failed\n";
   }
 
   // printStatus();

@@ -1,6 +1,7 @@
 #include "helper.h"
 #include "uniforms.h"
 #include "fbo.h"
+#include "lights.h"
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
@@ -29,7 +30,7 @@ using namespace std;
 #define RENDERER_H_
 
 typedef function<void(Uniforms)> SetupScene;
-typedef function<void(Uniforms)> LightScene;
+typedef function<Lights& (void)> GetLights;
 typedef function<void(Uniforms)> RenderScene;
 typedef function<void(GLuint)> BindScene;
 
@@ -37,11 +38,11 @@ class Renderer {
 public:
   Renderer(
       vector<string> s,
-      function<void(SetupScene, LightScene, RenderScene)> r,
+      function<void(SetupScene, GetLights, RenderScene)> r,
       long int t
   );
   bool ShouldUpdate();
-  function<void(SetupScene, LightScene, RenderScene)> Render;
+  function<void(SetupScene, GetLights, RenderScene)> Render;
 
 private:
   vector<string> sources;

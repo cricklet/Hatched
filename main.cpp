@@ -41,6 +41,12 @@ static long int getTimeOfDay() {
   return t.tv_sec * 1000 + t.tv_usec / 1000;
 }
 
+static auto loadLights() {
+  Lights l;
+  l.add(glm::vec3(0,0,1.5), glm::vec3(1,1,0), glm::vec3(0.8,0.8,1.5));
+  return l;
+}
+
 static auto loadNanosuit() {
   auto model = make_shared<Model>("models/nanosuit/nanosuit2.obj");
   glm::mat4 modelTrans = glm::mat4();
@@ -62,8 +68,6 @@ static auto loadScene() {
 
   vector<string> envFlags = {"env"};
   vector<string> objFlags = {"obj"};
-
-  scene->AddLight(glm::vec3(0,0,1.5));
 
   auto addShape = [&] (Shape s, glm::mat4 t) {
     for (int i = 0; i < s.meshes.size(); i ++) {
@@ -143,6 +147,7 @@ int sdlMain() {
 
   auto camera = FPSCamera(); //RotationCamera();
   auto scene = loadScene();
+  auto lights = loadLights();
   //auto model = loadNanosuit();
 
   glm::mat4 globalTrans;
@@ -165,9 +170,8 @@ int sdlMain() {
     checkErrors();
   };
 
-  SetupScene lightScene = [&] (Uniforms u) {
-    scene->Light(u);
-    checkErrors();
+  GetLights getLights = [&] () -> Lights & {
+    return lights;
   };
 
   RenderScene renderScene = [&] (Uniforms u) {
@@ -251,7 +255,7 @@ int sdlMain() {
     camera.Think(dt);
     checkErrors();
 
-    renderer.Render(setupScene, lightScene, renderScene);
+    renderer.Render(setupScene, getLights, renderScene);
     checkErrors();
 
     SDL_GL_SwapWindow(window);

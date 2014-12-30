@@ -1,6 +1,7 @@
 #include "renderer.h"
 #include "fbo.h"
 #include "textures.h"
+#include "cubemap.h"
 
 #include <memory>
 
@@ -44,21 +45,37 @@ Renderer::ShouldUpdate() {
 
 Renderer::Renderer(
     vector<string> s,
-    function<void(SetupScene, LightScene, RenderScene)> r,
-    long int t)
-:
-        sources(s), Render(r), loadTime(t) {
+    function<void(SetupScene, GetLights, RenderScene)> r,
+    long int t):
+                        sources(s), Render(r), loadTime(t) {
 }
 
 Renderer generateSSAORenderer(BindScene bindScene) {
   int halfWidth = WIDTH * 0.5;
   int halfHeight = HEIGHT * 0.5;
 
-  auto gFBO = make_shared<FBO>(halfWidth, halfHeight);
+  auto gInternalFormats = {GL_RGBA32F, GL_RGBA32F, GL_RGBA};
+  auto gFormats = {GL_RGBA, GL_RGBA, GL_RGBA};
+  auto gTypes = {GL_FLOAT, GL_FLOAT, GL_UNSIGNED_BYTE};
+
+  auto gFBO = make_shared<FBO>(halfWidth, halfHeight, 3,
+      gInternalFormats, gFormats, gTypes,
+      true, GL_DEPTH_COMPONENT24, GL_FLOAT);
+
   auto lightingFBO = make_shared<FBO>(halfWidth, halfHeight);
   auto ssaoFBO = make_shared<FBO>(halfWidth, halfHeight);
   auto blurFBO = make_shared<FBO>(halfWidth, halfHeight);
   auto hatchedFBO = make_shared<FBO>(halfWidth, halfHeight);
+
+  auto sInternalFormats = {GL_R32F, GL_R32F, GL_R32F, GL_R32F, GL_R32F, GL_R32F};
+  auto sFormats = {GL_RED, GL_RED, GL_RED, GL_RED, GL_RED, GL_RED};
+  auto sTypes = {GL_FLOAT, GL_FLOAT, GL_FLOAT, GL_FLOAT, GL_FLOAT, GL_FLOAT};
+
+//  vector<shared_ptr<CubeMap>> shadowMaps;
+//  for (int i = 0; i < 4; i ++) {
+//    auto s = make_shared<CubeMap>(halfHeight);
+//    shadowMaps.push_back(s);
+//  };
 
   auto noiseTexture = make_shared<Texture>("noise.png");
   checkErrors();
@@ -148,12 +165,17 @@ Renderer generateSSAORenderer(BindScene bindScene) {
   };
   long int t = getModifiedTime(sources);
 
-  auto render = [=] (SetupScene setupScene, LightScene lightScene, RenderScene renderScene) {
+  auto render = [=] (SetupScene setupScene, GetLights getLights, RenderScene renderScene) {
 
     auto bindFBO = [&] (auto fbo) {
       glBindFramebuffer(GL_FRAMEBUFFER, fbo->GetFrameBuffer());
       glViewport(0,0, fbo->Width(), fbo->Height());
     };
+
+    auto lights = getLights();
+    for (int i = 0; i < lights.num(); i ++) { // render each shadowmap
+
+    }
 
     { // gbuffer render pass
       glUseProgram(gShader);
@@ -178,7 +200,15 @@ Renderer generateSSAORenderer(BindScene bindScene) {
       glUniform1i(lightUniforms.get(POSITIONS), gFBO->GetAttachmentIndex(0));
       glUniform1i(lightUniforms.get(NORMALS), gFBO->GetAttachmentIndex(1));
 
-      lightScene(lightUniforms);
+      auto posValues = lights.getPositions();
+      auto conValues = lights.getConstants();
+      auto colValues = lights.getColors();
+
+      int numLights = lights.num();
+      glUniform1i(lightUniforms.get(NUM_LIGHTS), numLights);
+      glUniform3fv(lightUniforms.get(LIGHT_POSITIONS), numLights, posValues);
+      glUniform3fv(lightUniforms.get(LIGHT_CONSTANTS), numLights, conValues);
+      glUniform3fv(lightUniforms.get(LIGHT_COLORS),    numLights, colValues);
 
       // render scene
       gFBO->Render();
@@ -274,7 +304,7 @@ Renderer generateSimpleRenderer(BindScene bindScene) {
       MODEL_TRANS, VIEW_TRANS, PROJ_TRANS, COLOR
   });
 
-  auto renderScene = [=] (SetupScene setupScene, LightScene lightScene, RenderScene renderScene) {
+  auto render = [=] (SetupScene setupScene, GetLights getLights, RenderScene renderScene) {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(shader);
 
@@ -283,12 +313,11 @@ Renderer generateSimpleRenderer(BindScene bindScene) {
     checkErrors();
 
     setupScene(uniforms);
-    lightScene(uniforms);
     renderScene(uniforms);
     checkErrors();
   };
   vector<string> sources = { "simple.vert", "simple.frag" };
   long int t = getModifiedTime(sources);
 
-  return Renderer(sources, renderScene, t);
+  return Renderer(sources, render, t);
 }
