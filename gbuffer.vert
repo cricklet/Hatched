@@ -8,20 +8,20 @@ in vec2 inVertUV;
 out vec3 outVertPos;
 out vec3 outVertNorm;
 out vec2 outVertUV;
-out float outVertDepth;
+out vec3 outVertViewPos;
 
 uniform mat4 unifModelTrans;
 uniform mat4 unifViewTrans;
 uniform mat4 unifProjTrans;
 
 void main () {
-  vec4 viewPos = unifProjTrans * unifViewTrans * unifModelTrans * vec4(inVertPosition, 1.0);
-  gl_Position = viewPos;
+  gl_Position = unifProjTrans * unifViewTrans * unifModelTrans * vec4(inVertPosition, 1.0);
 
   mat4 trans = unifModelTrans;
 
   outVertNorm = vec3(transpose(inverse(trans)) * vec4(inVertNorm, 0));
   outVertPos = vec3(trans * vec4(inVertPosition, 1.0));
   outVertUV = inVertUV;
-  outVertDepth = length(viewPos);
+
+  outVertViewPos = vec3(unifViewTrans * unifModelTrans * vec4(inVertPosition, 1));
 }

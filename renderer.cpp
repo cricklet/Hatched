@@ -37,23 +37,23 @@ static void clearActiveBuffer(
 }
 
 static auto getShadowMapProjection() {
-  return glm::perspective(90.0f, 1.0f, 0.5f, 100.0f);
+  return glm::perspective((float) (M_PI / 2), 1.0f, 0.5f, 100.0f);
 }
 
 static auto getShadowMapTransform(int dir, glm::vec3 origin) {
   switch (dir) {
     case 0: // +X
-      return glm::lookAt(origin, origin + glm::vec3(+1, +0, 0), glm::vec3(0, 1, 0));
+      return glm::lookAt(origin, origin + glm::vec3(+1, +0, 0), glm::vec3(0, -1, 0));
     case 1: // -X
-      return glm::lookAt(origin, origin + glm::vec3(-1, +0, 0), glm::vec3(0, 1, 0));
+      return glm::lookAt(origin, origin + glm::vec3(-1, +0, 0), glm::vec3(0, -1, 0));
     case 2: // +Y
-      return glm::lookAt(origin, origin + glm::vec3(0, +1, 0), glm::vec3(0, 0, -1));
+      return glm::lookAt(origin, origin + glm::vec3(0, +1, 0), glm::vec3(0, 0, 1));
     case 3: // -Y
-      return glm::lookAt(origin, origin + glm::vec3(0, -1, 0), glm::vec3(0, 0, 1));
+      return glm::lookAt(origin, origin + glm::vec3(0, -1, 0), glm::vec3(0, 0, -1));
     case 4: // +Z
-      return glm::lookAt(origin, origin + glm::vec3(0, 0, +1), glm::vec3(1, 1, 0));
+      return glm::lookAt(origin, origin + glm::vec3(0, 0, +1), glm::vec3(0, -1, 0));
     case 5: // -Z
-      return glm::lookAt(origin, origin + glm::vec3(0, 0, -1), glm::vec3(1, 1, 0));
+      return glm::lookAt(origin, origin + glm::vec3(0, 0, -1), glm::vec3(0, -1, 0));
   }
 }
 
@@ -212,24 +212,20 @@ Renderer generateSSAORenderer(BindScene bindScene) {
     { // render each shadowmap
       glm::mat4 projTrans = getShadowMapProjection();
 
-      int num = lights.num();
-      if (shadowMaps.size() < num) num = shadowMaps.size();
+      int numShadowMaps = min(lights.num(), (int) shadowMaps.size());
+      for (int lightIndex = 0; lightIndex < numShadowMaps; lightIndex ++) {
+        auto shadowMap = shadowMaps[lightIndex];
+        auto position = lights.getPosition(lightIndex);
 
-      for (int i = 0; i < num; i ++) {
-        auto shadowMap = shadowMaps[i];
-        auto position = lights.getPosition(i);
+        glUseProgram(smShader);
+        glEnable(GL_DEPTH_TEST);
 
-        glViewport(0,0, shadowMap->Size(), shadowMap->Size());
-        for (int j = 0; j < 6; j ++) {
-          glBindFramebuffer(GL_FRAMEBUFFER, shadowMap->Framebuffer(j));
+        for (int faceIndex = 0; faceIndex < 6; faceIndex ++) {
+          glViewport(0,0, shadowMap->Size(), shadowMap->Size());
+          glm::mat4 viewTrans = getShadowMapTransform(faceIndex, position);
+
+          glBindFramebuffer(GL_FRAMEBUFFER, shadowMap->Framebuffer(faceIndex));
           clearActiveBuffer();
-        }
-        for (int j = 0; j < 6; j ++) {
-          glUseProgram(smShader);
-          glm::mat4 viewTrans = getShadowMapTransform(j, position);
-
-          glBindFramebuffer(GL_FRAMEBUFFER, shadowMap->Framebuffer(j));
-          glDisable(GL_DEPTH_TEST);
 
           glUniformMatrix4fv(smUniforms.get(VIEW_TRANS),
               1, GL_FALSE, glm::value_ptr(viewTrans));

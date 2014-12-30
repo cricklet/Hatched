@@ -90,6 +90,30 @@ static auto loadScene() {
   {
     auto box = generateBox(0.5,0.5,0.5);
     auto boxTrans = glm::mat4();
+    boxTrans *= glm::translate(glm::mat4(), glm::vec3(3,0,-0.75));
+    boxTrans *= glm::rotate(glm::mat4(), 0.5f, glm::vec3(0,0,1));
+    addShape(box, boxTrans);
+  }
+
+  {
+    auto box = generateBox(0.5,0.5,0.5);
+    auto boxTrans = glm::mat4();
+    boxTrans *= glm::translate(glm::mat4(), glm::vec3(0,1,-0.75));
+    boxTrans *= glm::rotate(glm::mat4(), 0.5f, glm::vec3(0,0,1));
+    addShape(box, boxTrans);
+  }
+
+  {
+    auto box = generateBox(0.5,0.5,0.5);
+    auto boxTrans = glm::mat4();
+    boxTrans *= glm::translate(glm::mat4(), glm::vec3(0,-4,-0.75));
+    boxTrans *= glm::rotate(glm::mat4(), 0.5f, glm::vec3(0,0,1));
+    addShape(box, boxTrans);
+  }
+
+  {
+    auto box = generateBox(0.5,0.5,0.5);
+    auto boxTrans = glm::mat4();
     boxTrans *= glm::translate(glm::mat4(), glm::vec3(-2,0,-0.75));
     boxTrans *= glm::rotate(glm::mat4(), 1.0f, glm::vec3(0,0,1));
     addShape(box, boxTrans);

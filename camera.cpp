@@ -34,7 +34,7 @@ RotationCamera::RotationCamera() {
   this->up = glm::vec3(0,0,1);
 
   this->projTrans = glm::perspective(
-      45.0f, // fov y
+      (float) (M_PI / 3), // fov y
       WIDTH / (float) HEIGHT, // aspect
       0.1f,  // near
       100.0f  //far
@@ -73,12 +73,12 @@ RotationCamera::Think(float dt) {
 
 
 FPSCamera::FPSCamera() {
-  this->location = glm::vec3(1.2,0,0);
+  this->location = glm::vec3(0,0,1.5);
   this->pitch = - M_PI / 2;
   this->yaw = 0;
 
   this->projTrans = glm::perspective(
-      45.0f, // fov y
+      (float) (M_PI / 3), // fov y
       WIDTH / (float) HEIGHT, // aspect
       0.1f,  // near
       100.0f  //far
