@@ -17,6 +17,15 @@ uniform int unifNumShadowMaps;
 uniform sampler2D unifPositions;
 uniform sampler2D unifNormals;
 
+float linstep(float min, float max, float v) {
+  return clamp((v-min) / (max-min), 0, 1);
+}
+
+float reduceLightBleeding(float p_max, float amount) {
+  // Remove the [0, Amount] tail and linearly rescale (Amount, 1].
+  return linstep(amount, 1, p_max);
+}
+
 float shadowContribution(vec3 dir, float depth, int index) {
   float M1 = texture(unifShadowMaps[index], dir).r;
   float M2 = texture(unifShadowMaps[index], dir).g;
@@ -28,7 +37,8 @@ float shadowContribution(vec3 dir, float depth, int index) {
 
   var = max(var, 0.0001);
 
-  return 1 - var / (var + pow(depth - avg, 2));
+  float pMax = var / (var + pow(depth - avg, 2));
+  return 1 - reduceLightBleeding(pMax, 0.01);
 }
 
 void main() {

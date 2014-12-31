@@ -22,21 +22,22 @@ uniform sampler2D unifHatch3;
 uniform sampler2D unifHatch4;
 uniform sampler2D unifHatch5;
 
-void draw(vec2 uv, int tLevel, float weight) {
-  uv *= 2;
-  if (tLevel == 0) outFragColor += weight * texture(unifHatch0, uv);
-  else if (tLevel == 1) outFragColor += weight * texture(unifHatch1, uv);
-  else if (tLevel == 2) outFragColor += weight * texture(unifHatch2, uv);
-  else if (tLevel == 3) outFragColor += weight * texture(unifHatch3, uv);
-  else if (tLevel == 4) outFragColor += weight * texture(unifHatch4, uv);
-  else if (tLevel == 5) outFragColor += weight * texture(unifHatch5, uv);
-  else return;
+vec3 draw(vec2 uv, int tLevel, float weight) {
+  if (tLevel == -1) return weight * vec3(1,1,1);
+  else if (tLevel == 0) return weight * texture(unifHatch0, uv).rgb;
+  else if (tLevel == 1) return weight * texture(unifHatch1, uv).rgb;
+  else if (tLevel == 2) return weight * texture(unifHatch2, uv).rgb;
+  else if (tLevel == 3) return weight * texture(unifHatch3, uv).rgb;
+  else if (tLevel == 4) return weight * texture(unifHatch4, uv).rgb;
+  else if (tLevel == 5) return weight * texture(unifHatch5, uv).rgb;
+  else return vec3(0,0,0);
 }
 
-void drawHatching(float light, vec2 uv) {
+vec3 drawHatching(vec3 light, vec2 uv) {
   ////////////////////////////
   // calculate the tone levels
-  float tLevel = (1 - light) * NUM_HATCHES - 2;
+  float lightVal = max(max(light.r, light.g), light.b);
+  float tLevel = (1 - lightVal) * NUM_HATCHES - 2;
 
   int tLevel0 = int(tLevel);
   float tWeight0 = tLevel - tLevel0;
@@ -47,15 +48,17 @@ void drawHatching(float light, vec2 uv) {
   tLevel0 = clamp(tLevel0, 0, NUM_HATCHES - 1);
   tLevel1 = clamp(tLevel1, 0, NUM_HATCHES - 1);
 
-  outFragColor = vec4(0,0,0,1);
+  vec3 result = vec3(0,0,0);
 
   {
-    draw(uv, tLevel0 - 1, 0);
-    draw(uv, tLevel1 + 1, 0);
+    result += draw(uv, tLevel0 - 1, 0);
+    result += draw(uv, tLevel1 + 1, 0);
   }
 
-  draw(uv, tLevel0, tWeight0);
-  draw(uv, tLevel1, tWeight1);
+  result += draw(uv, tLevel0, tWeight0);
+  result += draw(uv, tLevel1, tWeight1);
+
+  return result * light;
 }
 
 void main() {
@@ -73,7 +76,8 @@ void main() {
   vec3 ssao = vec3(texture(unifSSAOBuffer, sCoord));
 
   vec3 result = light - (1 - shadow) - (1 - ssao);
+  vec3 hatching = drawHatching(shadow, uv);
 
-  //drawHatching(clamp(hardSSAO, 0,1), uv);
+  //outFragColor = vec4(result, 1);
   outFragColor = vec4(result, 1);
 }

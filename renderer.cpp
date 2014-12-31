@@ -105,7 +105,7 @@ Renderer generateSSAORenderer(BindScene bindScene) {
   const int MAX_SHADOW_MAPS = 8;
   vector<shared_ptr<CubeMap>> shadowMaps;
   for (int i = 0; i < MAX_SHADOW_MAPS; i ++) {
-    auto s = make_shared<CubeMap>(halfHeight);
+    auto s = make_shared<CubeMap>(HEIGHT);
     shadowMaps.push_back(s);
   };
 
