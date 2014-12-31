@@ -2,7 +2,7 @@
 
 in vec2 outVertBufferCoord;
 
-out vec4 outFragColor;
+out vec4 outFrag[3];
 
 const int MAX_LIGHTS = 100;
 uniform vec3 unifLightPositions[MAX_LIGHTS];
@@ -36,7 +36,8 @@ void main() {
   vec3 wPosition = texture(unifPositions, sCoord).xyz;
   vec3 wNormal = normalize(texture(unifNormals, sCoord).xyz);
 
-  outFragColor = vec4(0.1,0.1,0.1,1);
+  outFrag[0] = vec4(0,0,0,1); // lighting
+  outFrag[1] = vec4(1,1,1,1); // shadow
 
   for (int i = 0; i < unifNumLights; i ++) {
     vec3 wLightPos = unifLightPositions[i];
@@ -56,9 +57,10 @@ void main() {
     if (i < unifNumShadowMaps) {
       shadow = shadowContribution(wDir, wDist, i);
     }
+    shadow = clamp(shadow,0,1);
 
-    float light = (1 - shadow) * attenuation * reflected;
-    light = clamp(light, 0,1);
-    outFragColor += vec4(light * lightColor, 1.0);
+    vec3 light = clamp(attenuation * reflected * lightColor, 0,1);
+    outFrag[0] += vec4(light, 1.0);
+    outFrag[1] -= vec4(shadow * light, 1.0);
   }
 }

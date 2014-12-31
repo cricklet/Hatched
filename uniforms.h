@@ -56,6 +56,10 @@ const string OFFSET_X= "unifOffsetX";
 const string OFFSET_Y = "unifOffsetY";
 const string BUFFER = "unifBuffer";
 
+const string LIGHT_BUFFER = "unifLightBuffer";
+const string SHADOW_BUFFER = "unifShadowBuffer";
+const string SSAO_BUFFER = "unifSSAOBuffer";
+
 const string RANDOM = "unifRandom";
 
 class Uniforms {

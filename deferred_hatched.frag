@@ -10,7 +10,9 @@ uniform sampler2D unifPositions;
 uniform sampler2D unifNormals;
 uniform sampler2D unifUVs;
 
-uniform sampler2D unifBuffer;
+uniform sampler2D unifLightBuffer;
+uniform sampler2D unifShadowBuffer;
+uniform sampler2D unifSSAOBuffer;
 
 int NUM_HATCHES = 6;
 uniform sampler2D unifHatch0;
@@ -19,8 +21,6 @@ uniform sampler2D unifHatch2;
 uniform sampler2D unifHatch3;
 uniform sampler2D unifHatch4;
 uniform sampler2D unifHatch5;
-
-uniform vec3 unifLightDir;
 
 void draw(vec2 uv, int tLevel, float weight) {
   uv *= 2;
@@ -68,17 +68,12 @@ void main() {
   vec3 vPos = vec3(unifViewTrans * vec4(wPos, 1));
   float vDepth = length(vPos);
 
-  float light = 0.5 + 0.5 * dot(-normalize(unifLightDir), normalize(wNorm));
-  light = int(light * 16) / 16.0;
-  
-  float ssao = texture(unifBuffer, sCoord).x;
-  float hardSSAO = 1 - 4 * (1 - ssao);
-  float lightSSAO = 1 - 2 * (1 - ssao);
+  vec3 light = vec3(texture(unifLightBuffer, sCoord));
+  vec3 shadow = vec3(texture(unifShadowBuffer, sCoord));
+  vec3 ssao = vec3(texture(unifSSAOBuffer, sCoord));
 
-  drawHatching(clamp(hardSSAO, 0,1), uv);
+  vec3 result = light - (1 - shadow) - (1 - ssao);
 
-  outFragColor = vec4(1,1,1,1);
-  outFragColor -= vec4(1 - lightSSAO, 1 - lightSSAO, 1 - lightSSAO, 1);
-  //outFragColor -= vec4(1 - hardSSAO, 1 - hardSSAO, 1 - hardSSAO, 1);
-  outFragColor -= vec4(1 - light, 1 - light, 1 - light, 1);
+  //drawHatching(clamp(hardSSAO, 0,1), uv);
+  outFragColor = vec4(result, 1);
 }

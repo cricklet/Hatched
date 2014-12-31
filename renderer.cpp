@@ -86,18 +86,22 @@ Renderer generateSSAORenderer(BindScene bindScene) {
       3, gInternalFormats, gFormats, gTypes,
       true, GL_DEPTH_COMPONENT24, GL_FLOAT);
 
-  auto shadowedFBO = make_shared<FBO>(halfWidth, halfHeight);
-  auto lightingFBO = make_shared<FBO>(halfWidth, halfHeight);
+  auto lInternalFormats = {GL_RGBA, GL_RGBA};
+  auto lFormats = {GL_RGBA, GL_RGBA};
+  auto lTypes = {GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE};
+  auto lightingFBO = make_shared<FBO>(halfWidth, halfHeight,
+      2, lInternalFormats, lFormats, lTypes);
+
   auto ssaoFBO = make_shared<FBO>(halfWidth, halfHeight);
   auto blurFBO = make_shared<FBO>(halfWidth, halfHeight);
   auto hatchedFBO = make_shared<FBO>(halfWidth, halfHeight);
 
-  auto sInternalFormats = {GL_RGBA32F};
-  auto sFormats = {GL_RGBA};
-  auto sTypes = {GL_FLOAT};
+  auto smInternalFormats = {GL_RGBA32F};
+  auto smFormats = {GL_RGBA};
+  auto smTypes = {GL_FLOAT};
 
-  auto shadowInterFBO = make_shared<FBO>(HEIGHT, HEIGHT,
-      1, sInternalFormats, sFormats, sTypes);
+  auto smIntermediateFBO = make_shared<FBO>(HEIGHT, HEIGHT,
+      1, smInternalFormats, smFormats, smTypes);
   const int MAX_SHADOW_MAPS = 8;
   vector<shared_ptr<CubeMap>> shadowMaps;
   for (int i = 0; i < MAX_SHADOW_MAPS; i ++) {
@@ -137,20 +141,11 @@ Renderer generateSSAORenderer(BindScene bindScene) {
   checkErrors();
 
   // Renders scene with shadows
-  GLuint shadowedShader = generateShaderProgram("render_buffer.vert", "deferred_shadows.frag");
-  Uniforms shadowedUniforms;
-  shadowedUniforms.add(shadowedShader, {
+  GLuint lightingShader = generateShaderProgram("render_buffer.vert", "deferred_shadows.frag");
+  Uniforms lightingUniforms;
+  lightingUniforms.add(lightingShader, {
       LIGHT_POSITIONS, LIGHT_CONSTANTS, LIGHT_COLORS, NUM_LIGHTS,
       SHADOW_MAPS, NUM_SHADOW_MAPS,
-      POSITIONS, NORMALS,
-  });
-  checkErrors();
-
-  // Render lighting to an fbo
-  GLuint lightShader = generateShaderProgram("render_buffer.vert", "deferred_lighting.frag");
-  Uniforms lightUniforms;
-  lightUniforms.add(lightShader, {
-      LIGHT_POSITIONS, LIGHT_CONSTANTS, LIGHT_COLORS, NUM_LIGHTS,
       POSITIONS, NORMALS,
   });
   checkErrors();
@@ -183,8 +178,7 @@ Renderer generateSSAORenderer(BindScene bindScene) {
       HATCH0_TEXTURE, HATCH1_TEXTURE, HATCH2_TEXTURE,
       HATCH3_TEXTURE, HATCH4_TEXTURE, HATCH5_TEXTURE,
       POSITIONS, NORMALS, UVS,
-      BUFFER,
-      LIGHT_DIR,
+      LIGHT_BUFFER, SHADOW_BUFFER, SSAO_BUFFER,
       VIEW_TRANS,
   });
   fboRenderer->BindToShader(hatchShader);
@@ -233,8 +227,8 @@ Renderer generateSSAORenderer(BindScene bindScene) {
             glUseProgram(smShader);
             glEnable(GL_DEPTH_TEST);
 
-            glViewport(0,0, shadowInterFBO->Width(), shadowInterFBO->Height());
-            glBindFramebuffer(GL_FRAMEBUFFER, shadowInterFBO->GetFrameBuffer());
+            glViewport(0,0, smIntermediateFBO->Width(), smIntermediateFBO->Height());
+            glBindFramebuffer(GL_FRAMEBUFFER, smIntermediateFBO->GetFrameBuffer());
             clearActiveBuffer();
 
             glUniformMatrix4fv(smUniforms.get(VIEW_TRANS),
@@ -253,7 +247,7 @@ Renderer generateSSAORenderer(BindScene bindScene) {
             glBindFramebuffer(GL_FRAMEBUFFER, shadowMap->Framebuffer(faceIndex));
             clearActiveBuffer();
 
-            glUniform1i(blurUniforms.get(BUFFER), shadowInterFBO->GetAttachmentIndex(0));
+            glUniform1i(blurUniforms.get(BUFFER), smIntermediateFBO->GetAttachmentIndex(0));
             glUniform1i(blurUniforms.get(BLUR_DEPTH_CHECK), 0);
             glUniform1f(blurUniforms.get(BLUR_RADIUS), 0.001);
             checkErrors();
@@ -283,57 +277,32 @@ Renderer generateSSAORenderer(BindScene bindScene) {
       checkErrors();
     }
 
-    { // shadowing render pass
-      glUseProgram(shadowedShader);
-      bindFBO(shadowedFBO);
-
-      glEnable(GL_DEPTH_TEST);
-      clearActiveBuffer(0,0,0,0, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-      glUniform1i(shadowedUniforms.get(POSITIONS), gFBO->GetAttachmentIndex(0));
-      glUniform1i(shadowedUniforms.get(NORMALS), gFBO->GetAttachmentIndex(1));
-
-      auto posValues = lights.getPositions();
-      auto conValues = lights.getConstants();
-      auto colValues = lights.getColors();
-
-      int numLights = lights.num();
-      glUniform1i(shadowedUniforms.get(NUM_LIGHTS), numLights);
-      glUniform3fv(shadowedUniforms.get(LIGHT_POSITIONS), numLights, posValues);
-      glUniform3fv(shadowedUniforms.get(LIGHT_CONSTANTS), numLights, conValues);
-      glUniform3fv(shadowedUniforms.get(LIGHT_COLORS),    numLights, colValues);
-
-      int shadowMapIndices[MAX_SHADOW_MAPS];
-      for (int i = 0; i < MAX_SHADOW_MAPS; i ++) {
-        shadowMapIndices[i] = shadowMaps[i]->GetTextureIndex();
-      }
-      glUniform1iv(shadowedUniforms.get(SHADOW_MAPS), MAX_SHADOW_MAPS, shadowMapIndices);
-      glUniform1i(shadowedUniforms.get(NUM_SHADOW_MAPS), numShadowMaps);
-
-      // render scene
-      fboRenderer->Render();
-      checkErrors();
-    }
-
-    { // lighting render pass
-      glUseProgram(lightShader);
+    { // lighting/shadowing render pass
+      glUseProgram(lightingShader);
       bindFBO(lightingFBO);
 
       glEnable(GL_DEPTH_TEST);
       clearActiveBuffer(0,0,0,0, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-      glUniform1i(lightUniforms.get(POSITIONS), gFBO->GetAttachmentIndex(0));
-      glUniform1i(lightUniforms.get(NORMALS), gFBO->GetAttachmentIndex(1));
+      glUniform1i(lightingUniforms.get(POSITIONS), gFBO->GetAttachmentIndex(0));
+      glUniform1i(lightingUniforms.get(NORMALS), gFBO->GetAttachmentIndex(1));
 
       auto posValues = lights.getPositions();
       auto conValues = lights.getConstants();
       auto colValues = lights.getColors();
 
       int numLights = lights.num();
-      glUniform1i(lightUniforms.get(NUM_LIGHTS), numLights);
-      glUniform3fv(lightUniforms.get(LIGHT_POSITIONS), numLights, posValues);
-      glUniform3fv(lightUniforms.get(LIGHT_CONSTANTS), numLights, conValues);
-      glUniform3fv(lightUniforms.get(LIGHT_COLORS),    numLights, colValues);
+      glUniform1i(lightingUniforms.get(NUM_LIGHTS), numLights);
+      glUniform3fv(lightingUniforms.get(LIGHT_POSITIONS), numLights, posValues);
+      glUniform3fv(lightingUniforms.get(LIGHT_CONSTANTS), numLights, conValues);
+      glUniform3fv(lightingUniforms.get(LIGHT_COLORS),    numLights, colValues);
+
+      int shadowMapIndices[MAX_SHADOW_MAPS];
+      for (int i = 0; i < MAX_SHADOW_MAPS; i ++) {
+        shadowMapIndices[i] = shadowMaps[i]->GetTextureIndex();
+      }
+      glUniform1iv(lightingUniforms.get(SHADOW_MAPS), MAX_SHADOW_MAPS, shadowMapIndices);
+      glUniform1i(lightingUniforms.get(NUM_SHADOW_MAPS), numShadowMaps);
 
       // render scene
       fboRenderer->Render();
@@ -375,9 +344,6 @@ Renderer generateSSAORenderer(BindScene bindScene) {
       glUseProgram(hatchShader);
       bindFBO(hatchedFBO);
 
-      glm::vec3 lightDir = glm::vec3(-1,-1,-1);
-      glUniform3fv(hatchUniforms.get(LIGHT_DIR), 1, glm::value_ptr(lightDir));
-
       glUniform1i(hatchUniforms.get(HATCH0_TEXTURE), hatch0Texture->index);
       glUniform1i(hatchUniforms.get(HATCH1_TEXTURE), hatch1Texture->index);
       glUniform1i(hatchUniforms.get(HATCH2_TEXTURE), hatch2Texture->index);
@@ -388,7 +354,10 @@ Renderer generateSSAORenderer(BindScene bindScene) {
       glUniform1i(hatchUniforms.get(POSITIONS), gFBO->GetAttachmentIndex(0));
       glUniform1i(hatchUniforms.get(NORMALS), gFBO->GetAttachmentIndex(1));
       glUniform1i(hatchUniforms.get(UVS), gFBO->GetAttachmentIndex(2));
-      glUniform1i(hatchUniforms.get(BUFFER), blurFBO->GetAttachmentIndex(0));
+
+      glUniform1i(hatchUniforms.get(LIGHT_BUFFER), lightingFBO->GetAttachmentIndex(0));
+      glUniform1i(hatchUniforms.get(SHADOW_BUFFER), lightingFBO->GetAttachmentIndex(1));
+      glUniform1i(hatchUniforms.get(SSAO_BUFFER), blurFBO->GetAttachmentIndex(0));
       checkErrors();
 
       setupScene(hatchUniforms);
@@ -410,10 +379,10 @@ Renderer generateSSAORenderer(BindScene bindScene) {
         fboRenderer->Render();
       };
 
-      drawBuffer(lightingFBO->GetAttachmentIndex(0), 0.5, -0.5,-0.5);
-      drawBuffer(ssaoFBO->GetAttachmentIndex(0), 0.5, -0.5,0.5);
+      drawBuffer(blurFBO->GetAttachmentIndex(0), 0.5, -0.5,0.5);
       drawBuffer(hatchedFBO->GetAttachmentIndex(0), 0.5, 0.5,0.5);
-      drawBuffer(shadowedFBO->GetAttachmentIndex(0), 0.5, 0.5,-0.5);
+      drawBuffer(lightingFBO->GetAttachmentIndex(1), 0.5, -0.5,-0.5);
+      drawBuffer(lightingFBO->GetAttachmentIndex(0), 0.5, 0.5,-0.5);
 
       checkErrors();
     }
