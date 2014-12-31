@@ -38,7 +38,7 @@ float shadowContribution(vec3 dir, float depth, int index) {
   var = max(var, 0.0001);
 
   float pMax = var / (var + pow(depth - avg, 2));
-  return 1 - reduceLightBleeding(pMax, 0.01);
+  return clamp(1 - reduceLightBleeding(pMax, 0.01), 0,1);
 }
 
 void main() {
@@ -47,6 +47,7 @@ void main() {
   vec3 wNormal = normalize(texture(unifNormals, sCoord).xyz);
 
   outFrag[0] = vec4(0,0,0,0); // lighting
+  outFrag[1] = vec4(0,0,0,0); // shadows
 
   for (int i = 0; i < unifNumLights; i ++) {
     vec3 wLightPos = unifLightPositions[i];
@@ -61,17 +62,23 @@ void main() {
     float wDist = length(wDir);
     float attenuation = 1.0 / (constant + linear * wDist + squared * wDist * wDist);
     float reflected = dot(-normalize(wDir), wNormal);
-    float shadow = 0;
+    float shadowContrib = 0;
     if (i < unifNumShadowMaps) {
-      shadow = shadowContribution(wDir, wDist, i);
+      shadowContrib = shadowContribution(wDir, wDist, i);
     }
 
-    float light = attenuation * (1 - shadow) * clamp(reflected,0,1);
+    float light = attenuation * clamp(reflected,0,1);
+    float shadow = attenuation * shadowContrib;
+    shadow = min(shadow, light);
     float darkness = 0;
     if (reflected > 0) {
-      darkness += attenuation * shadow;
+      darkness += shadow;
     }
 
-    outFrag[0] += vec4(clamp(light * lightColor, 0,1), clamp(darkness, 0,1));
+    vec3 l = clamp(light * lightColor, 0,1);
+    vec3 s = clamp(shadow * lightColor, 0,1);
+
+    outFrag[0] += vec4(l, 1);
+    outFrag[1] += vec4(s, clamp(darkness, 0,1));
   }
 }

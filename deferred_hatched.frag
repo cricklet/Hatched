@@ -23,6 +23,7 @@ uniform sampler2D unifHatch4;
 uniform sampler2D unifHatch5;
 
 vec3 draw(vec2 uv, int tLevel, float weight) {
+  tLevel -= 1;
   if (tLevel == -1) return weight * vec3(1,1,1);
   else if (tLevel == 0) return weight * texture(unifHatch0, uv).rgb;
   else if (tLevel == 1) return weight * texture(unifHatch1, uv).rgb;
@@ -36,7 +37,7 @@ vec3 draw(vec2 uv, int tLevel, float weight) {
 vec3 drawHatching(float light, vec2 uv) {
   ////////////////////////////
   // calculate the tone levels
-  float tLevel = pow(1 - light, 2) * (NUM_HATCHES - 1);
+  float tLevel = 1.4 * (1 - light) * (NUM_HATCHES - 1);
 
   int tLevel0 = int(tLevel);
   int tLevel1 = int(tLevel) + 1;
@@ -70,19 +71,32 @@ void main() {
   vec3 vPos = vec3(unifViewTrans * vec4(wPos, 1));
   float vDepth = length(vPos);
 
-  vec3 rendering = texture(unifLightBuffer, sCoord).rgb;
-  float light = max(max(rendering.r, rendering.g), rendering.b);
-  float darkness = texture(unifLightBuffer, sCoord).a;
+  vec3 lighting = texture(unifLightBuffer, sCoord).rgb;
+  float lightingVal = max(max(lighting.r, lighting.g), lighting.b);
+  vec3 shadow = texture(unifShadowBuffer, sCoord).rgb;
+  float shadowVal =  max(max(shadow.r, shadow.g), shadow.b);
+  float darkness = texture(unifShadowBuffer, sCoord).a;
   vec3 ssao = vec3(texture(unifSSAOBuffer, sCoord));
-  vec3 hatching = drawHatching(light, uv);
 
   vec3 result = vec3(0,0,0);
-  result += rendering - (1 - ssao);
-  //result += vec3(1,1,1);
 
-  float hatchingWeight = clamp(pow(darkness, 0.5), 0,1);
-  result *= (hatchingWeight * hatching) + (1 - hatchingWeight) * vec3(1,1,1);
-  //result += hatching;
+  bool CRAYOLA = false;
+  bool SUBTRACT_HATCHING = true;
+
+  vec3 hatching = drawHatching(1 - shadowVal, uv);
+  if (SUBTRACT_HATCHING) {
+    hatching = hatching - vec3(1,1,1);
+    if (CRAYOLA && length(shadow) != 0) {
+      hatching = hatching * normalize(shadow);
+    }
+  }
+
+  result += lighting - (1 - ssao);// - shadow;
+
+  float hatchingWeight = clamp(pow(darkness, 0.1), 0,1);
+  if (SUBTRACT_HATCHING) {
+    result += hatchingWeight * hatching;
+  }
 
   outFragColor = vec4(result, 1);
 }
