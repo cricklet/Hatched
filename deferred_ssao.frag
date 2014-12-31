@@ -19,7 +19,7 @@ uniform vec3 unifLightDir;
 uniform sampler2D unifRandom; // stores a texture of random values
 
 const float HEMI_MAX_DELTA = 2; // multiplied by radius
-const float HEMI_RADIUS = 0.05;
+const float HEMI_RADIUS = 0.04;
 const int HEMI_SAMPLES = 24;
 const vec3 HEMI [] = vec3 []
   (vec3(0.015389, -0.009998, 0.025293),

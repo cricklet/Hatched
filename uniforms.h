@@ -40,9 +40,6 @@ const string LIGHT_CONSTANTS= "unifLightConstants";
 const string LIGHT_COLORS = "unifLightColors";
 const string NUM_LIGHTS = "unifNumLights";
 
-const string BLUR_RADIUS = "unifBlurRadius";
-const string BLUR_DEPTH_CHECK = "unifBlurDepthCheck";
-
 const string SHADOW_MAPS = "unifShadowMaps";
 const string NUM_SHADOW_MAPS = "unifNumShadowMaps";
 
@@ -55,6 +52,9 @@ const string SCALE = "unifScale";
 const string OFFSET_X= "unifOffsetX";
 const string OFFSET_Y = "unifOffsetY";
 const string BUFFER = "unifBuffer";
+
+const string BUFFER_SIZE = "unifBufferSize";
+const string BLUR_DIR = "unifBlurDir";
 
 const string LIGHT_BUFFER = "unifLightBuffer";
 const string SHADOW_BUFFER = "unifShadowBuffer";

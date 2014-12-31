@@ -46,8 +46,8 @@ static auto loadLights() {
   l.add(glm::vec3(0,0,1.5), glm::vec3(1,1,0), glm::vec3(2, 2, 2));
   l.add(glm::vec3(3,3,1), glm::vec3(1,1,0), glm::vec3(1,0,0));
   l.add(glm::vec3(3,-3,1), glm::vec3(1,1,0), glm::vec3(0,1,0));
-//  l.add(glm::vec3(-3,3,1), glm::vec3(1,1,0), glm::vec3(1,0,1));
-//  l.add(glm::vec3(-3,-3,1), glm::vec3(1,1,0), glm::vec3(1,0.5,0.5));
+  l.add(glm::vec3(-3,3,1), glm::vec3(1,1,0), glm::vec3(1,0,1));
+  l.add(glm::vec3(-3,-3,1), glm::vec3(1,1,0), glm::vec3(1,0.5,0.5));
   return l;
 }
 
@@ -267,6 +267,7 @@ int sdlMain() {
     if (timeTillUpdateRenderer < 0) {
       if (renderer.ShouldUpdate()) {
         cout << "Attempting to reload renderer\n";
+        renderer = generateNULLRenderer();
 
         try {
           Generator &generator = generators[rendererIndex];

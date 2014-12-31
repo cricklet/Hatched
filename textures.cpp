@@ -10,17 +10,17 @@ static int newTextureIndex () {
   for (int i = 0; i < 100; i ++) {
     if (indicesInUse[i] == false) {
       indicesInUse[i] = true;
-      // cout << "Next texture index: " << i << "\n";
+      cout << "Next texture index: " << i << "\n";
       return i;
     }
   }
-  // cout << "Failed to retrieve texture index: " << -1 << "\n";
+  cout << "Failed to retrieve texture index: " << -1 << "\n";
   return -1;
 }
 
 static void freeTextureIndex (int i) {
   indicesInUse[i] = false;
-  // cout << "Freeing texture index: " << i << "\n";
+  cout << "Freeing texture index: " << i << "\n";
 }
 
 static GLuint loadTexture(const char *filename, int index) {
@@ -29,6 +29,7 @@ static GLuint loadTexture(const char *filename, int index) {
   glGenTextures(1, &texture);
   glActiveTexture(index + GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, texture);
+  checkErrors();
 
   int width, height;
   unsigned char* image = SOIL_load_image(filename, &width, &height, 0, SOIL_LOAD_RGB);

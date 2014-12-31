@@ -33,17 +33,16 @@ vec3 draw(vec2 uv, int tLevel, float weight) {
   else return vec3(0,0,0);
 }
 
-vec3 drawHatching(vec3 light, vec2 uv) {
+vec3 drawHatching(float light, vec2 uv) {
   ////////////////////////////
   // calculate the tone levels
-  float lightVal = max(max(light.r, light.g), light.b);
-  float tLevel = (1 - lightVal) * NUM_HATCHES - 2;
+  float tLevel = pow(1 - light, 2) * (NUM_HATCHES - 1);
 
   int tLevel0 = int(tLevel);
-  float tWeight0 = tLevel - tLevel0;
-
   int tLevel1 = int(tLevel) + 1;
-  float tWeight1 = 1 - tWeight0;
+
+  float tWeight1 = tLevel - tLevel0;
+  float tWeight0 = 1 - tWeight1;
 
   tLevel0 = clamp(tLevel0, 0, NUM_HATCHES - 1);
   tLevel1 = clamp(tLevel1, 0, NUM_HATCHES - 1);
@@ -58,7 +57,7 @@ vec3 drawHatching(vec3 light, vec2 uv) {
   result += draw(uv, tLevel0, tWeight0);
   result += draw(uv, tLevel1, tWeight1);
 
-  return result * light;
+  return result;
 }
 
 void main() {
@@ -71,13 +70,19 @@ void main() {
   vec3 vPos = vec3(unifViewTrans * vec4(wPos, 1));
   float vDepth = length(vPos);
 
-  vec3 light = vec3(texture(unifLightBuffer, sCoord));
-  vec3 shadow = vec3(texture(unifShadowBuffer, sCoord));
+  vec3 rendering = texture(unifLightBuffer, sCoord).rgb;
+  float light = max(max(rendering.r, rendering.g), rendering.b);
+  float darkness = texture(unifLightBuffer, sCoord).a;
   vec3 ssao = vec3(texture(unifSSAOBuffer, sCoord));
+  vec3 hatching = drawHatching(light, uv);
 
-  vec3 result = light - (1 - shadow) - (1 - ssao);
-  vec3 hatching = drawHatching(shadow, uv);
+  vec3 result = vec3(0,0,0);
+  result += rendering - (1 - ssao);
+  //result += vec3(1,1,1);
 
-  //outFragColor = vec4(result, 1);
+  float hatchingWeight = clamp(pow(darkness, 0.5), 0,1);
+  result *= (hatchingWeight * hatching) + (1 - hatchingWeight) * vec3(1,1,1);
+  //result += hatching;
+
   outFragColor = vec4(result, 1);
 }

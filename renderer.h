@@ -53,5 +53,6 @@ private:
 Renderer generateSimpleRenderer(BindScene bindScene);
 //Renderer generateDeferredRenderer();
 Renderer generateSSAORenderer(BindScene bindScene);
+Renderer generateNULLRenderer();
 
 #endif

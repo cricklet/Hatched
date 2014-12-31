@@ -46,8 +46,7 @@ void main() {
   vec3 wPosition = texture(unifPositions, sCoord).xyz;
   vec3 wNormal = normalize(texture(unifNormals, sCoord).xyz);
 
-  outFrag[0] = vec4(0,0,0,1); // lighting
-  outFrag[1] = vec4(1,1,1,1); // shadow
+  outFrag[0] = vec4(0,0,0,0); // lighting
 
   for (int i = 0; i < unifNumLights; i ++) {
     vec3 wLightPos = unifLightPositions[i];
@@ -62,15 +61,17 @@ void main() {
     float wDist = length(wDir);
     float attenuation = 1.0 / (constant + linear * wDist + squared * wDist * wDist);
     float reflected = dot(-normalize(wDir), wNormal);
-
     float shadow = 0;
     if (i < unifNumShadowMaps) {
       shadow = shadowContribution(wDir, wDist, i);
     }
-    shadow = clamp(shadow,0,1);
 
-    vec3 light = clamp(attenuation * reflected * lightColor, 0,1);
-    outFrag[0] += vec4(light, 1.0);
-    outFrag[1] -= vec4(shadow * light, 1.0);
+    float light = attenuation * (1 - shadow) * clamp(reflected,0,1);
+    float darkness = 0;
+    if (reflected > 0) {
+      darkness += attenuation * shadow;
+    }
+
+    outFrag[0] += vec4(clamp(light * lightColor, 0,1), clamp(darkness, 0,1));
   }
 }

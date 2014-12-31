@@ -69,7 +69,7 @@ Renderer::Renderer(
     vector<string> s,
     function<void(SetupScene, GetLights, RenderScene)> r,
     long int t):
-                            sources(s), Render(r), loadTime(t) {
+                                sources(s), Render(r), loadTime(t) {
 }
 
 Renderer generateSSAORenderer(BindScene bindScene) {
@@ -78,9 +78,9 @@ Renderer generateSSAORenderer(BindScene bindScene) {
   int quarterWidth = WIDTH * 0.5;
   int quarterHeight = HEIGHT * 0.5;
 
-  auto gInternalFormats = {GL_RGBA32F, GL_RGBA32F, GL_RGBA};
+  auto gInternalFormats = {GL_RGBA32F, GL_RGBA32F, GL_RGBA32F};
   auto gFormats = {GL_RGBA, GL_RGBA, GL_RGBA};
-  auto gTypes = {GL_FLOAT, GL_FLOAT, GL_UNSIGNED_BYTE};
+  auto gTypes = {GL_FLOAT, GL_FLOAT, GL_FLOAT};
 
   auto gFBO = make_shared<FBO>(halfWidth, halfHeight,
       3, gInternalFormats, gFormats, gTypes,
@@ -93,14 +93,17 @@ Renderer generateSSAORenderer(BindScene bindScene) {
       2, lInternalFormats, lFormats, lTypes);
 
   auto ssaoFBO = make_shared<FBO>(halfWidth, halfHeight);
-  auto blurFBO = make_shared<FBO>(halfWidth, halfHeight);
+  auto blur0FBO = make_shared<FBO>(halfWidth, halfHeight);
+  auto blur1FBO = make_shared<FBO>(halfWidth, halfHeight);
   auto hatchedFBO = make_shared<FBO>(halfWidth, halfHeight);
 
   auto smInternalFormats = {GL_RGBA32F};
   auto smFormats = {GL_RGBA};
   auto smTypes = {GL_FLOAT};
 
-  auto smIntermediateFBO = make_shared<FBO>(HEIGHT, HEIGHT,
+  auto sm0FBO = make_shared<FBO>(HEIGHT, HEIGHT,
+      1, smInternalFormats, smFormats, smTypes);
+  auto sm1FBO = make_shared<FBO>(HEIGHT, HEIGHT,
       1, smInternalFormats, smFormats, smTypes);
   const int MAX_SHADOW_MAPS = 8;
   vector<shared_ptr<CubeMap>> shadowMaps;
@@ -163,10 +166,10 @@ Renderer generateSSAORenderer(BindScene bindScene) {
   checkErrors();
 
   // Blur the ssao
-  GLuint blurShader = generateShaderProgram("render_buffer.vert", "blur.frag");
+  GLuint blurShader = generateShaderProgram("render_buffer.vert", "gaussian_blur.frag");
   Uniforms blurUniforms;
   blurUniforms.add(blurShader, {
-      BUFFER, DEPTHS, BLUR_RADIUS, BLUR_DEPTH_CHECK
+      BUFFER, BUFFER_SIZE, BLUR_DIR
   });
   fboRenderer->BindToShader(blurShader);
   checkErrors();
@@ -197,7 +200,7 @@ Renderer generateSSAORenderer(BindScene bindScene) {
       "render_buffer.vert",
       "deferred_lighting.frag",
       "deferred_ssao.frag",
-      "blur.frag",
+      "gaussian_blur.frag",
       "deferred_hatched.frag",
       "render_buffer.frag",
       "shadowmap.frag",
@@ -227,8 +230,8 @@ Renderer generateSSAORenderer(BindScene bindScene) {
             glUseProgram(smShader);
             glEnable(GL_DEPTH_TEST);
 
-            glViewport(0,0, smIntermediateFBO->Width(), smIntermediateFBO->Height());
-            glBindFramebuffer(GL_FRAMEBUFFER, smIntermediateFBO->GetFrameBuffer());
+            glViewport(0,0, sm0FBO->Width(), sm0FBO->Height());
+            glBindFramebuffer(GL_FRAMEBUFFER, sm0FBO->GetFrameBuffer());
             clearActiveBuffer();
 
             glUniformMatrix4fv(smUniforms.get(VIEW_TRANS),
@@ -241,15 +244,37 @@ Renderer generateSSAORenderer(BindScene bindScene) {
           }
 
           { // blur the shadow map
+            if (sm1FBO->Width() != shadowMap->Size()) {
+              throw runtime_error(
+                  string("Blur FBO needs to be the same size as what's being blurred."));
+            }
+
+            auto xDir = glm::vec2(1,0);
+            auto yDir = glm::vec2(0,1);
+
             glUseProgram(blurShader);
 
+            // blur using the intermediate
+            glViewport(0,0, sm1FBO->Width(), sm1FBO->Height());
+            glBindFramebuffer(GL_FRAMEBUFFER, sm1FBO->GetFrameBuffer());
+            clearActiveBuffer();
+
+            glUniform1i(blurUniforms.get(BUFFER), sm0FBO->GetAttachmentIndex(0));
+            glUniform1i(blurUniforms.get(BUFFER_SIZE), sm0FBO->Width());
+            glUniform2fv(blurUniforms.get(BLUR_DIR), 1, glm::value_ptr(xDir));
+            checkErrors();
+
+            fboRenderer->Render();
+            checkErrors();
+
+            // finish blur
             glViewport(0,0, shadowMap->Size(), shadowMap->Size());
             glBindFramebuffer(GL_FRAMEBUFFER, shadowMap->Framebuffer(faceIndex));
             clearActiveBuffer();
 
-            glUniform1i(blurUniforms.get(BUFFER), smIntermediateFBO->GetAttachmentIndex(0));
-            glUniform1i(blurUniforms.get(BLUR_DEPTH_CHECK), 0);
-            glUniform1f(blurUniforms.get(BLUR_RADIUS), 0.001);
+            glUniform1i(blurUniforms.get(BUFFER), sm1FBO->GetAttachmentIndex(0));
+            glUniform1i(blurUniforms.get(BUFFER_SIZE), sm1FBO->Width());
+            glUniform2fv(blurUniforms.get(BLUR_DIR), 1, glm::value_ptr(yDir));
             checkErrors();
 
             fboRenderer->Render();
@@ -327,13 +352,30 @@ Renderer generateSSAORenderer(BindScene bindScene) {
     }
 
     { // blur render pass
+      if (ssaoFBO->Width() != blur0FBO->Width()) {
+        throw runtime_error(
+            string("Blur FBO needs to be the same size as what's being blurred."));
+      }
+
+      auto xDir = glm::vec2(1,0);
+      auto yDir = glm::vec2(0,1);
+
       glUseProgram(blurShader);
-      bindFBO(blurFBO);
+      bindFBO(blur0FBO);
 
       glUniform1i(blurUniforms.get(BUFFER), ssaoFBO->GetAttachmentIndex(0));
-      glUniform1i(blurUniforms.get(DEPTHS), gFBO->GetDepthIndex());
-      glUniform1i(blurUniforms.get(BLUR_DEPTH_CHECK), 1);
-      glUniform1f(blurUniforms.get(BLUR_RADIUS), 0.0005);
+      glUniform1i(blurUniforms.get(BUFFER_SIZE), ssaoFBO->Width());
+      glUniform2fv(blurUniforms.get(BLUR_DIR), 1, glm::value_ptr(xDir));
+      checkErrors();
+
+      fboRenderer->Render();
+      checkErrors();
+
+      bindFBO(blur1FBO);
+
+      glUniform1i(blurUniforms.get(BUFFER), blur0FBO->GetAttachmentIndex(0));
+      glUniform1i(blurUniforms.get(BUFFER_SIZE), blur0FBO->Height());
+      glUniform2fv(blurUniforms.get(BLUR_DIR), 1, glm::value_ptr(yDir));
       checkErrors();
 
       fboRenderer->Render();
@@ -357,7 +399,7 @@ Renderer generateSSAORenderer(BindScene bindScene) {
 
       glUniform1i(hatchUniforms.get(LIGHT_BUFFER), lightingFBO->GetAttachmentIndex(0));
       glUniform1i(hatchUniforms.get(SHADOW_BUFFER), lightingFBO->GetAttachmentIndex(1));
-      glUniform1i(hatchUniforms.get(SSAO_BUFFER), blurFBO->GetAttachmentIndex(0));
+      glUniform1i(hatchUniforms.get(SSAO_BUFFER), blur1FBO->GetAttachmentIndex(0));
       checkErrors();
 
       setupScene(hatchUniforms);
@@ -379,7 +421,7 @@ Renderer generateSSAORenderer(BindScene bindScene) {
         fboRenderer->Render();
       };
 
-      drawBuffer(blurFBO->GetAttachmentIndex(0), 0.5, -0.5,0.5);
+      drawBuffer(blur1FBO->GetAttachmentIndex(0), 0.5, -0.5,0.5);
       drawBuffer(hatchedFBO->GetAttachmentIndex(0), 0.5, 0.5,0.5);
       drawBuffer(lightingFBO->GetAttachmentIndex(1), 0.5, -0.5,-0.5);
       drawBuffer(lightingFBO->GetAttachmentIndex(0), 0.5, 0.5,-0.5);
@@ -388,6 +430,15 @@ Renderer generateSSAORenderer(BindScene bindScene) {
     }
   };
 
+  return Renderer(sources, render, t);
+}
+
+Renderer generateNULLRenderer() {
+  Uniforms uniforms;
+  auto render = [=] (SetupScene setupScene, GetLights getLights, RenderScene renderScene) {
+  };
+  vector<string> sources = {};
+  long int t = 0;
   return Renderer(sources, render, t);
 }
 
