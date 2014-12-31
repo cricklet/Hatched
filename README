@@ -9,3 +9,4 @@ disable copying on any gl related class
 disable copying on anything that has a destructor
 
 d85c742ad482c67b6244560a0b40b354bb2bcf7b <= commit to remember
+830db8569d7ebcb0695d377aea36f0a908189fae <= beautifuls
