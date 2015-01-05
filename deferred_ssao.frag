@@ -101,7 +101,7 @@ void main() {
   float vDepth = length(vPos);
 
   float disk_occlusion = 0.0f;
-  {
+  { // This code is based on the SSAO implementation here: http://blog.evoserv.at/index.php/2012/12/hemispherical-screen-space-ambient-occlusion-ssao-for-deferred-renderers-using-openglglsl/
     float random = texture(unifRandom, sCoord * mat2x2(24,0,0,16)).r * 2 * 3.14159;
     mat2x2 randomRotation = mat2x2
       (cos(random), -sin(random),
@@ -126,7 +126,7 @@ void main() {
   }
 
   float hemi_occlusion = 0.0f;
-  {
+  { // This code is based on the SSAO implementation here: http://john-chapman-graphics.blogspot.com/2013/01/ssao-tutorial.html and http://theorangeduck.com/page/pure-depth-ssao
     // reflect each sample on a random plane
     vec3 randomNormal = texture(unifRandom, sCoord * mat2x2(24,0,0,16)).xyz;
     randomNormal = normalize(randomNormal - vec3(0.5,0.5,0.5));
