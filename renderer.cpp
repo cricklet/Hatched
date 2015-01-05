@@ -437,7 +437,7 @@ Renderer generateNULLRenderer() {
   Uniforms uniforms;
   auto render = [=] (SetupScene setupScene, GetLights getLights, RenderScene renderScene) {
   };
-  vector<string> sources = {};
+  vector<string> sources = { "simple.vert" };
   long int t = 0;
   return Renderer(sources, render, t);
 }

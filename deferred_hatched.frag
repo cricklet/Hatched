@@ -74,28 +74,51 @@ void main() {
   vec3 lighting = texture(unifLightBuffer, sCoord).rgb;
   float lightingVal = max(max(lighting.r, lighting.g), lighting.b);
   vec3 shadow = texture(unifShadowBuffer, sCoord).rgb;
-  float shadowVal =  max(max(shadow.r, shadow.g), shadow.b);
+  float shadowVal = max(max(shadow.r, shadow.g), shadow.b);
   float darkness = texture(unifShadowBuffer, sCoord).a;
   vec3 ssao = vec3(texture(unifSSAOBuffer, sCoord));
+  float ssaoVal = max(max(ssao.r, ssao.g), ssao.b);
 
   vec3 result = vec3(0,0,0);
 
   bool CRAYOLA = false;
-  bool SUBTRACT_HATCHING = true;
 
-  vec3 hatching = drawHatching(1 - shadowVal, uv);
-  if (SUBTRACT_HATCHING) {
-    hatching = hatching - vec3(1,1,1);
+  bool HATCH_SHADOWS = false;
+  bool HATCH_SSAO = false;
+  bool HATCH_EVERYTHING = false;
+  bool HATCH_NOTHING = true;
+
+  vec3 hatching;
+  if (HATCH_SHADOWS) {
+    hatching = drawHatching(1 - shadowVal, uv);
+    hatching -= vec3(1,1,1);
     if (CRAYOLA && length(shadow) != 0) {
       hatching = hatching * normalize(shadow);
     }
-  }
-
-  result += lighting - (1 - ssao);// - shadow;
-
-  float hatchingWeight = clamp(pow(darkness, 0.1), 0,1);
-  if (SUBTRACT_HATCHING) {
+    result += lighting - (1 - ssao);// - shadow;
+    float hatchingWeight = clamp(pow(darkness, 0.1), 0,1);
     result += hatchingWeight * hatching;
+
+  } else if (HATCH_SSAO) {
+    hatching = drawHatching(1 - (1 - ssaoVal), 2 * uv);
+    hatching -= vec3(1,1,1);
+    result = vec3(1,1,1);
+    result += hatching;
+
+  } else if (HATCH_EVERYTHING) {
+    hatching = drawHatching(lightingVal - shadowVal, uv);
+    if (CRAYOLA) {
+      hatching -= vec3(1,1,1);
+      hatching = hatching * (vec3(1,1,1) - lighting + shadow);
+      hatching += vec3(1,1,1);
+    } else {
+      hatching *= (lighting - shadow);
+    }
+    result -= (1 - ssao);
+    result += hatching;
+
+  } else if (HATCH_NOTHING) {
+    result += lighting - (1 - ssao) - shadow;
   }
 
   outFragColor = vec4(result, 1);

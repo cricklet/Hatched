@@ -290,6 +290,9 @@ int sdlMain() {
     SDL_GL_SwapWindow(window);
     checkErrors();
 
+    long int endTime = getTimeOfDay();
+    float renderTime = (float) (endTime - currentTime) / 1000.0f;
+    cout << renderTime << "\n";
     lastTime = currentTime;
   }
 

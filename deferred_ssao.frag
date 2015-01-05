@@ -18,7 +18,7 @@ uniform vec3 unifLightDir;
 
 uniform sampler2D unifRandom; // stores a texture of random values
 
-const float HEMI_MAX_DELTA = 2; // multiplied by radius
+const float HEMI_MAX_DELTA = 4; // multiplied by radius
 const float HEMI_RADIUS = 0.04;
 const int HEMI_SAMPLES = 24;
 const vec3 HEMI [] = vec3 []
@@ -48,7 +48,7 @@ const vec3 HEMI [] = vec3 []
    vec3(0.210937, 0.536386, 0.479892));
 
 const float DISK_MAX_DELTA = 0.05;
-const vec2 DISK_RADIUS = vec2(0.008, 0.006) * 0.5;
+const vec2 DISK_RADIUS = vec2(0.008, 0.006) * 0.4;
 const int DISK_SAMPLES = 16;
 const vec2 DISK[] = vec2[] // These are the Poisson Disk Samples
   (vec2( -0.94201624,  -0.39906216 ),

@@ -68,6 +68,7 @@ void main() {
     }
 
     float light = attenuation * clamp(reflected,0,1);
+    //light = round(light * 10) / 10.0;
     float shadow = attenuation * shadowContrib;
     shadow = min(shadow, light);
     float darkness = 0;
