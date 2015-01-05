@@ -1,0 +1,48 @@
+<html>
+<head>
+  <link rel="stylesheet" type="text/css" href="styles.css" />
+</head>
+<body>
+  <h1>Realtime Hatched Renderer</h1>
+  <p>This is a stylized renderer that combines diffuse shading, SSAO, variance shadow maps, and realtime hatching.</p>
+  <p>The source-code can be found <a href="https://github.com/cricklet/hatched">on my GitHub</a>.</p>
+  <ol>
+    <li><a href="intro.html">Introduction</a></li>
+    <li><a href="method.html">Methodology</a></li>
+    <li><a href="results.html">Results/Discussion</a></li>
+  </ol>
+  <img src="index.png" style="width: 100%"/>
+
+  <h3>References</h3>
+
+  <h4>Realtime hatching</h4>
+  <p>My implementation of real-time hatching was based on the paper introducing it in 2000. I also used the hatching textures created by Hernan Liatis and by Jaume Sanchez.
+  <p>
+    <a href="http://dl.acm.org/citation.cfm?id=383328">Praun et al., Real-time Hatching, 2000</a><br/>
+    <a href="http://www.floored.com/blog/2014/sketch-rendering">Jake Zien, Implementing a 'sketch' style of rendering in WebGL, 2014</a><br/>
+    <a href="https://sites.google.com/site/cs7490finalrealtimehatching/">Hernan Liatis, CS7490 Final: Real-time Hatching, 2012</a><br/>
+    <a href="https://developer.mozilla.org/en-US/demos/detail/cross-hatching-glsl-shader">Cross-hatching GLSL shader, Jaume Sanchez, 2013</a><br/>
+  </p>
+
+  <h4>SSAO</h4>
+  <p>My implementation of SSAO was primarily based on the following articles. You can find details about my implementation under <a href="results.html">'results'</a>.
+  <p>
+    <a href="http://theorangeduck.com/page/pure-depth-ssao">Daniel Holden, Pure Depth SSAO, 2011</a><br/>
+    <a href="http://john-chapman-graphics.blogspot.com/2013/01/ssao-tutorial.html">John Chapman, SSAO Tutorial, 2011</a></br>
+    <a href="http://blog.evoserv.at/index.php/2012/12/hemispherical-screen-space-ambient-occlusion-ssao-for-deferred-renderers-using-openglglsl/">Christoph Weinzierl-Heigl, Hemispherical SSAO, 2013</a><br/>
+  </p>
+
+  <h4>Variance Shadow Maps</h4>
+  <p>My implementation of VSMs was based mostly on the article by Andrew Lauritzen and on Christian Forfang's VSM implementation.</p>
+  <p>
+    <a href="https://github.com/cforfang/opengl-shadowmapping">Christian Forfang, Shadow Mapping in OpenGL 3+, 2014</a><br/>
+    <a href="http://http.developer.nvidia.com/GPUGems3/gpugems3_ch08.html">Andrew Lauritzen, Summed-Area Variance Shadow Maps, 2007</a><br/>
+  </p>
+
+  <h4>3D Objects</h4>
+  <p>I used the Nanosuit model and the Sponza scene created by Crytek. Both are free to use for non-commercial use.</p>
+  <p>
+    <a href="http://tf3dm.com/3d-model/crysis-nanosuit-60746.html">Crytek, Nanosuit from Crysis, 2007</a><br/>
+    <a href="http://graphics.cs.williams.edu/data/meshes.xml">Crytek, Dabrovik Sponza, 2011</a><br/>
+</body>
+</html>

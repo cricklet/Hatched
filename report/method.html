@@ -1,0 +1,51 @@
+<html>
+<head>
+  <link rel="stylesheet" type="text/css" href="styles.css" />
+</head>
+<body>
+  <h1>Methodology</h1>
+  <h2>Creating a rendering engine</h2>
+  <p>At first, I experimented with building a rendering pipeline off of libgdx (a rendering library) and Unity 3D (a game engine). However, I eventually decided to build a rendering engine from scratch both because I wanted to have low-level control to the rendering pipeline and because I wanted to understand the inner workings of a rendering engine. This step was very time consuming but very valuable as I learned how to write modern OpenGL and modern C++.</p>
+  <p>One of the crucial aspects of the rendering engine is that it had to render an interesting scene with lighting. At first, I thought I could achieve this simply by using a library to import .obj files. However, this proved problematic because I didn't have control over the UV-mapping of the scene and because the library I chose couldn't import scenes created in Blender. I ended up, instead, rendering a scene lit by point lights and made up of cubes and .obj meshes (see figure 0).</p>
+  <p><img src="scene.png" /><br/><i>Figure 0: Scene</i></p>
+
+  <h2>Real-time hatching</h2>
+  <p>The core of my rendering pipeline is the real-time hatching algorithm. This leverages standard texture mapping techniques to apply hatching to objects in a scene. The real-time hatching algorithm renders different hatching textures based on the lighting and depth of every pixel. In figure 1, you can see the tilemap of hatching textures I used. I decided to use someone else's pre-generated tonal art map as my hatching textures due to time constraints.</p>
+  <p><img src="mipped_hatches.png" style="width:80%"/><br/><i>Figure 1: Tilemap of hatching textures (<a href="https://sites.google.com/site/cs7490finalrealtimehatching/">source</a>)</i></p>
+  <p>The early shaders I wrote would index into the tilemap based on a computed mip level (related to the depth of a pixel) and tone level (related to the brightness of a pixel). Unfortunately indexing into a tilemap breaks when using bilinear texture filtering-- which is necessary to prevent aliasing (see figure 2).</p>
+  <p><img src="bilinear.png" style="width:50%"/><br/><i>Figure 2: Indexing into a tilemap with bilinear texture filtering.</i></p>
+
+  <p>In addition, the smaller hatching patterns are too small to provide satisfying tiling (see figure 3). Finally, naive blending of the different mip-map levels produced unseemly results (see figure 4). Because of this, I ended up implementing real-time hatching without additional mip-map levels.</p>
+  <p><img src="low_mips.png" style="width:50%"/><br/><i>Figure 3: Unsatisfying tiling at large depths.</i></p>
+  <p><img src="blending.png" style="width:50%"/><br/><i>Figure 4: Unsatisfying blending of mip-maps.</i></p>
+
+  <h2>SSAO</h2>
+  <p>When computing SSAO, you need to know the depth of every pixel on the screen and the normals associated with each pixel. The first version of SSAO I wrote (based on the <a href="http://theorangeduck.com/page/pure-depth-ssao">SSAO implementation found Corange</a>) would estimate the normals of every pixel by considering the depths of nearby pixels. This worked very well, except that it introduced artifacts wherever the depths changed dramatically (see figure 5).</p>
+  <p><img src="depth_only_ssao.png" style="width:50%" /><br/><i>Figure 5: Depth only SSAO</i></p>
+  <p>Eventually, I started using deferred rendering, where attributes (like position and normal) are pre-computed per-pixel. Then, I could compute SSAO using the pre-computed per-pixel normals. The initial results were promising but lacked the sharpness I saw in other SSAO implementations (see figure 6).</p>
+  <p><img src="early_ssao.png" style="width:50%" /><br/><i>Figure 6: Early version of deferred SSAO</i></p>
+  <p>I switched to using two different methods of estimating occlusion. The first uses a hemisphere of samples (based on <a href="http://john-chapman-graphics.blogspot.com/2013/01/ssao-tutorial.html">John Chapman's SSAO tutorial</a>) and the second uses a Poisson disk of samples (based on <a href="http://blog.evoserv.at/index.php/2012/12/hemispherical-screen-space-ambient-occlusion-ssao-for-deferred-renderers-using-openglglsl/">Christoph Weinzierl-Heigl's SSAO tutorial</a>). The hemisphere method is good for obvious occlusion (see figure 7) while the disk method accentuates creases (see figure 8). In addition, I blurrred the SSAO using a two-pass gaussian blur.</p>
+  <p>
+    <img src="ssao_hemi.png" style="width: 40%; float: left" />
+    <img src="ssao_disk.png" style="width: 40%; float: left" />
+    <br style="clear: both"/>
+    <i>Figure 7 &amp; 8: Hemisphere based and disk based SSAO.</i>
+  </p>
+
+  <h2>Shadows</h2>
+  <p>I decided to implement shadows using shadow mapping due to it's ease of implementation. Because my rendering engine uses exclusively point lights, I rendered shadow maps to cube maps (see figure 9).</p>
+  <p><img src="shadow_map.png" style="width: 40%" /><br/><i>Figure 9: One side of a cube map shadow map.</i></p>
+  <p>I also implemented variance shadow mapping (VSM) based on the <a href="https://github.com/cforfang/opengl-shadowmapping">implementaiton by Christian Forfang</a> and the <a href="http://http.developer.nvidia.com/GPUGems3/gpugems3_ch08.html">article by Andrew Lauritzen in GPU Gems 3</a>. This algorithm improves upon shadow mapping by storing not only the depth at each pixel, but also depth^2. This simple addition makes it possible to filter or blur the shadow map by allowing you to retrieve the depth variance at every location in in the shadow map (see figure 10, 11, 12).</p>
+  <p>
+    <img src="sm_aliasing.png" style="height: 9em; float: left" />
+    <img src="sm_filtering.png" style="height: 9em; float: left" />
+    <img src="sm_blurred.png" style="height: 9em; float: left" />
+    <br style="clear: both"/>
+    <i>Figure 10, 11, 12: Shadows computed with SM, filtered VSM, blurred VSM</i>
+  </p>
+
+  <h2>Cel-Shading</h2>
+  <p>I initially implemented cel-shading but decided that it looked too absurd with point light sources (see figure 13).</p>
+  <p><img src="cel_shading.png" style="width: 50%" /><br/><i>Figure 13: Cel-shading.</i></p>
+</body>
+</html>

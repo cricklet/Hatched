@@ -1,0 +1,31 @@
+<html>
+<head>
+  <link rel="stylesheet" type="text/css" href="styles.css" />
+</head>
+<body>
+  <h1>Introduction</h1>
+  <h2>Goal</h2>
+  <p>My goal with this project was two-fold:</p>
+  <ol>
+    <li>Render the detail in a scene with hatching/pen-strokes.</li>
+    <li>Utilizes realtime hatching without over-burdening the viewer with excessive noise.</li>
+  </ol>
+  <p>Such an renderer could be used in games to create a distinctive art style,  CAD to mimic technical illustration, architectural renders to give a sense of space without requiring realistic texturing, etc.</p>
+  <h2>Previous Work</h2>
+  <h3>Hatching</h3>
+  <p>Hatching is a technique artists use to provide detail and shading to images without using textures, gradients, or solid colors.</p>
+  <p>One of the first attempts to render a 3D scene in realtime with hatching was <a href="http://dl.acm.org/citation.cfm?id=340918"><i>Stylized rendering techniques for scalable real-time 3D animation</i> [Lake et al. 2000]</a>. This technique draws hatching in image-space, which results in a 'shower-door effect': even as objects move around, the hatching stays in the same place as though it were embedded in stationary glass pane in between the viewer and the objects.</p>
+  <p><img src="shower.png" /><br/><i>Figure 1: Image-space rendering of hatching [Lake et al. 2000].</i></p>
+  <p>In <a href="http://dl.acm.org/citation.cfm?id=383328"><i>Real-time hatching</i> [Praun et al. 2000]</a>, this problem is sovled by rendering hatching in object-space by rendering hatch textures via texture mapping. This method was expanded in <a href="http://dl.acm.org/citation.cfm?id=508540"><i>Fine tone control in hardware hatching</i> [Webb et al. 2002]</a>.</p>
+  <p><img src="simple.png"/><br/><i>Figure 2: Object-space rendering of hatching [Praun et al. 2000].</i></p>
+  <p>A large problem with hatching, however, is that it often overwhelms the user with detail. Artists often use a technique called 'indication' to draw hatching or detail sparingly. In <a href="http://dl.acm.org/citation.cfm?id=192184"><i>Computer-generated pen-and-ink illustration</i> [Winkenbach et al. 1994]</a>, an offline method for rendering a scene with indication is provided.</p>
+  <p><img src="indication.png" style="width: 75%"/><br/><i>Figure 3: The image on the left utilizes indication to avoid overwhelming the viewer with detail.</i></p>
+  <h3>Ambient Occlusion</h3>
+  <p>Because hatching is best used to exemplify detail, I decided to also investigate how lighting deals with detail.</p>
+  <p>Ambient occlusion is a lighting technique which calculates how much ambient light can reach any point in a 3D scene. Areas where ambient light is occluded are darkened. Recently, an algorithm for approximating ambient occlusion in screen space (SSAO) has become incredibly popular in realtime rendering <a href="http://dl.acm.org/citation.cfm?id=1281671">[Mittring 2007]</a>.</p>
+  <p><img src="ssao.png" style="width: 50%"/><br/><i>Figure 4: Screen-space ambient occlusion.</i></p>
+  <h2>Approach</h2>
+  <p>In Dr. Seuss's illustrations, he often uses hatching to show contours and detail rather than actual realistic lighting. Inspired by this, I wanted to render detail, rather than general shading, using hatching, thus avoiding overwhelming the viewer with detail. The initial idea was to render screen-space ambient occlusion with realtime hatching.</p>
+  <p><img src="seuss.png" style="width: 50%"/><br/><i>Figure 5: Dr. Seuss's "The Places You'll Go"</i></p>
+</body>
+</html>
